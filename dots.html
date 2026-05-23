@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ドット＆ボックス - ゲーム王国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      text-align: center;
+    }
+
+    .title {
+      font-family: "Cinzel", serif;
+      font-size: 2.2rem;
+      margin: 20px 0 10px;
+    }
+
+    /* ===== 盤全体（7×7 の均等グリッド） ===== */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(7, 48px);
+      grid-template-rows: repeat(7, 48px);
+      gap: 0;
+      margin: 20px auto;
+      width: max-content;
+      background: #111;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    /* ===== 点 ===== */
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      margin: auto;
+    }
+
+    /* ===== 線（点と点の間にぴったり） ===== */
+    .h-line, .v-line {
+      background: #444;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .h-line {
+      height: 10px;
+      width: 100%;
+      margin: auto 0;
+      border-radius: 5px;
+    }
+
+    .v-line {
+      width: 10px;
+      height: 100%;
+      margin: 0 auto;
+      border-radius: 5px;
+    }
+
+    /* ===== 線の色（プレイヤー） ===== */
+    .p1-line {
+      background: #4aa8ff !important;
+    }
+
+    .p2-line {
+      background: #ff5c5c !important;
+    }
+
+    /* ===== マス（四角） ===== */
+    .box {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;
+      background: transparent;
+      transition: 0.2s;
+    }
+
+    .p1-box {
+      background: rgba(80, 160, 255, 0.45);
+    }
+
+    .p2-box {
+      background: rgba(255, 80, 80, 0.45);
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1 class="title">ドット＆ボックス</h1>
+  <p class="subtitle">線を引いて四角を作ろう（2人対戦）</p>
+
+  <div id="status" class="status"></div>
+  <div id="score" class="status"></div>
+
+  <div id="board" class="board"></div>
+
+  <div style="margin-top:20px;">
+    <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
+  </div>
+
+  <script src="common.js"></script>
+
+  <script>
+    /* ===== データ構造 ===== */
+    let currentP = 1;
+    let hLines = [];
+    let vLines = [];
+    let boxes = [];
+    let scoreP1 = 0;
+    let scoreP2 = 0;
+    let gameOver = false;
+
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
+    const scoreEl = document.getElementById("score");
+
+    function init() {
+      hLines = Array.from({ length: 4 }, () => Array(5).fill(0));
+      vLines = Array.from({ length: 5 }, () => Array(4).fill(0));
+      boxes = Array.from({ length: 4 }, () => Array(4).fill(0));
+      scoreP1 = 0;
+      scoreP2 = 0;
+      currentP = 1;
+      gameOver = false;
+
+      render();
+      updateStatus();
+    }
+
+    function render() {
+      boardEl.innerHTML = "";
+
+      for (let gy = 0; gy < 7; gy++) {
+        for (let gx = 0; gx < 7; gx++) {
+
+          const isDot = gx % 2 === 0 && gy % 2 === 0;
+          const isH = gx % 2 === 1 && gy % 2 === 0;
+          const isV = gx % 2 === 0 && gy % 2 === 1;
+          const isBox = gx % 2 === 1 && gy % 2 === 1;
+
+          if (isDot) {
+            const d = document.createElement("div");
+            d.className = "dot";
+            boardEl.appendChild(d);
+          }
+
+          else if (isH) {
+            const x = (gx - 1) / 2;
+            const y = gy / 2;
+            const line = document.createElement("div");
+            line.className = "h-line";
+
+            if (hLines[y][x] === 1) line.classList.add("p1-line");
+            if (hLines[y][x] === 2) line.classList.add("p2-line");
+
+            line.onclick = () => clickH(x, y);
+            boardEl.appendChild(line);
+          }
+
+          else if (isV) {
+            const x = gx / 2;
+            const y = (gy - 1) / 2;
+            const line = document.createElement("div");
+            line.className = "v-line";
+
+            if (vLines[y][x] === 1) line.classList.add("p1-line");
+            if (vLines[y][x] === 2) line.classList.add("p2-line");
+
+            line.onclick = () => clickV(x, y);
+            boardEl.appendChild(line);
+          }
+
+          else if (isBox) {
+            const x = (gx - 1) / 2;
+            const y = (gy - 1) / 2;
+            const box = document.createElement("div");
+            box.className = "box";
+
+            if (boxes[y][x] === 1) box.classList.add("p1-box");
+            if (boxes[y][x] === 2) box.classList.add("p2-box");
+
+            boardEl.appendChild(box);
+          }
+        }
+      }
+    }
+
+    function clickH(x, y) {
+      if (gameOver) return;
+      if (hLines[y][x] !== 0) return;
+
+      hLines[y][x] = currentP;
+      const gained = checkBoxesAfterH(x, y);
+
+      if (gained === 0) currentP = currentP === 1 ? 2 : 1;
+
+      render();
+      updateStatus();
+      checkGameOver();
+    }
+
+    function clickV(x, y) {
+      if (gameOver) return;
+      if (vLines[y][x] !== 0) return;
+
+      vLines[y][x] = currentP;
+      const gained = checkBoxesAfterV(x, y);
+
+      if (gained === 0) currentP = currentP === 1 ? 2 : 1;
+
+      render();
+      updateStatus();
+      checkGameOver();
+    }
+
+    function checkBoxesAfterH(x, y) {
+      let gained = 0;
+
+      if (y > 0 && isBoxComplete(x, y - 1)) {
+        if (boxes[y - 1][x] === 0) {
+          boxes[y - 1][x] = currentP;
+          gained++;
+        }
+      }
+
+      if (y < 4 && isBoxComplete(x, y)) {
+        if (boxes[y][x] === 0) {
+          boxes[y][x] = currentP;
+          gained++;
+        }
+      }
+
+      if (currentP === 1) scoreP1 += gained;
+      else scoreP2 += gained;
+
+      return gained;
+    }
+
+    function checkBoxesAfterV(x, y) {
+      let gained = 0;
+
+      if (x > 0 && isBoxComplete(x - 1, y)) {
+        if (boxes[y][x - 1] === 0) {
+          boxes[y][x - 1] = currentP;
+          gained++;
+        }
+      }
+
+      if (x < 4 && isBoxComplete(x, y)) {
+        if (boxes[y][x] === 0) {
+          boxes[y][x] = currentP;
+          gained++;
+        }
+      }
+
+      if (currentP === 1) scoreP1 += gained;
+      else scoreP2 += gained;
+
+      return gained;
+    }
+
+    function isBoxComplete(bx, by) {
+      return (
+        hLines[by][bx] !== 0 &&
+        hLines[by + 1][bx] !== 0 &&
+        vLines[by][bx] !== 0 &&
+        vLines[by][bx + 1] !== 0
+      );
+    }
+
+    function updateStatus() {
+      if (gameOver) return;
+
+      statusEl.textContent =
+        currentP === 1 ? "Player1（青）の番" : "Player2（赤）の番";
+
+      scoreEl.textContent =
+        `Player1: ${scoreP1}マス　|　Player2: ${scoreP2}マス`;
+    }
+
+    function checkGameOver() {
+      let total = 0;
+      for (let y = 0; y < 4; y++)
+        for (let x = 0; x < 4; x++)
+          if (boxes[y][x] !== 0) total++;
+
+      if (total === 16) {
+        gameOver = true;
+        let msg = "";
+
+        if (scoreP1 > scoreP2) msg = "Player1 の勝ち！";
+        else if (scoreP2 > scoreP1) msg = "Player2 の勝ち！";
+        else msg = "引き分け！";
+
+        statusEl.textContent = msg;
+      }
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

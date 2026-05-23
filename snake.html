@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>スネーク - ゲーム王国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      text-align: center;
+      margin: 0;
+    }
+
+    .title {
+      font-family: "Cinzel", serif;
+      font-size: 2.4rem;
+      margin-top: 20px;
+    }
+
+    canvas {
+      background: #111;
+      margin-top: 20px;
+      border: 2px solid #444;
+      image-rendering: pixelated;
+      touch-action: none; /* スワイプ操作のため */
+    }
+
+    /* ===== 大きな中央メッセージ ===== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      font-size: 2.4rem;
+      font-weight: bold;
+      display: none;
+    }
+
+    .overlay button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 1.2rem;
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .overlay button:hover {
+      background: #444;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1 class="title">スネーク</h1>
+  <p>スワイプ or 矢印キーで操作（リンゴは常に5個）</p>
+
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <!-- ===== スタート画面 ===== -->
+  <div id="startScreen" class="overlay" style="display:flex;">
+    <div>スネーク</div>
+    <button onclick="startGame()">スタート</button>
+    <button onclick="location.href='index.html'">メニューに戻る</button>
+  </div>
+
+  <!-- ===== ゲームオーバー画面 ===== -->
+  <div id="gameOverScreen" class="overlay">
+    <div id="gameOverText">ゲームオーバー！</div>
+    <button onclick="restart()">もう一回</button>
+    <button onclick="location.href='index.html'">メニューに戻る</button>
+  </div>
+
+  <!-- ===== 成功画面 ===== -->
+  <div id="successScreen" class="overlay">
+    <div id="successText">クリア！</div>
+    <button onclick="restart()">もう一回</button>
+    <button onclick="location.href='index.html'">メニューに戻る</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const grid = 20;
+    const size = 20;
+
+    let snake = [];
+    let vx = 1, vy = 0;
+    let apples = [];
+    let score = 0;
+    let gameOver = false;
+    let running = false;
+
+    /* ===== 初期化 ===== */
+    function initSnake() {
+      snake = [];
+      for (let i = 0; i < 5; i++) {
+        snake.push({ x: 10 - i, y: 10 });
+      }
+      vx = 1;
+      vy = 0;
+      score = 0;
+      gameOver = false;
+
+      apples = [];
+      while (apples.length < 5) apples.push(spawnApple());
+    }
+
+    function spawnApple() {
+      return {
+        x: Math.floor(Math.random() * size),
+        y: Math.floor(Math.random() * size)
+      };
+    }
+
+    /* ===== スタート ===== */
+    function startGame() {
+      document.getElementById("startScreen").style.display = "none";
+      running = true;
+      initSnake();
+      loop();
+    }
+
+    /* ===== リスタート ===== */
+    function restart() {
+      document.getElementById("gameOverScreen").style.display = "none";
+      document.getElementById("successScreen").style.display = "none";
+      running = true;
+      initSnake();
+      loop();
+    }
+
+    /* ===== PC用キー操作 ===== */
+    document.addEventListener("keydown", e => {
+      if (!running) return;
+
+      if (e.key === "ArrowUp" && vy !== 1) { vx = 0; vy = -1; }
+      if (e.key === "ArrowDown" && vy !== -1) { vx = 0; vy = 1; }
+      if (e.key === "ArrowLeft" && vx !== 1) { vx = -1; vy = 0; }
+      if (e.key === "ArrowRight" && vx !== -1) { vx = 1; vy = 0; }
+    });
+
+    /* ===== スマホ用スワイプ操作 ===== */
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener("touchstart", e => {
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+    });
+
+    canvas.addEventListener("touchend", e => {
+      if (!running) return;
+
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && vx !== -1) { vx = 1; vy = 0; }
+        if (dx < 0 && vx !== 1) { vx = -1; vy = 0; }
+      } else {
+        if (dy > 0 && vy !== -1) { vx = 0; vy = 1; }
+        if (dy < 0 && vy !== 1) { vx = 0; vy = -1; }
+      }
+    });
+
+    /* ===== メインループ ===== */
+    function loop() {
+      if (!running) return;
+      if (gameOver) return;
+
+      const head = { x: snake[0].x + vx, y: snake[0].y + vy };
+
+      // 壁
+      if (head.x < 0 || head.x >= size || head.y < 0 || head.y >= size) {
+        return endGame("壁にぶつかった！");
+      }
+
+      // 自分の体
+      if (snake.some(s => s.x === head.x && s.y === head.y)) {
+        return endGame("自分にぶつかった！");
+      }
+
+      snake.unshift(head);
+
+      // りんご判定
+      let ate = false;
+      apples.forEach((a, i) => {
+        if (a.x === head.x && a.y === head.y) {
+          ate = true;
+          score++;
+          apples[i] = spawnApple();
+        }
+      });
+
+      if (!ate) snake.pop();
+
+      // ===== 成功判定 =====
+      if (snake.length >= size * size) {
+        return success();
+      }
+
+      draw();
+      setTimeout(loop, 110);
+    }
+
+    /* ===== ゲームオーバー ===== */
+    function endGame(msg) {
+      gameOver = true;
+      running = false;
+      document.getElementById("gameOverText").textContent =
+        msg + " スコア: " + score;
+      document.getElementById("gameOverScreen").style.display = "flex";
+    }
+
+    /* ===== 成功 ===== */
+    function success() {
+      running = false;
+      document.getElementById("successText").textContent =
+        "クリア！ スコア: " + score;
+      document.getElementById("successScreen").style.display = "flex";
+    }
+
+    /* ===== 描画 ===== */
+    function draw() {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, 400, 400);
+
+      // グリッド
+      ctx.strokeStyle = "#222";
+      for (let i = 0; i <= size; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * grid, 0);
+        ctx.lineTo(i * grid, 400);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i * grid);
+        ctx.lineTo(400, i * grid);
+        ctx.stroke();
+      }
+
+      // りんご
+      apples.forEach(a => {
+        ctx.fillStyle = "#f44";
+        ctx.beginPath();
+        ctx.arc(a.x * grid + grid / 2, a.y * grid + grid / 2, grid / 2 - 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#faa";
+        ctx.beginPath();
+        ctx.arc(a.x * grid + grid / 2 - 3, a.y * grid + grid / 2 - 3, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 蛇
+      snake.forEach((s, i) => {
+        if (i === 0) ctx.fillStyle = "#4af"; // 頭
+        else ctx.fillStyle = "#2a7bd6"; // 体
+
+        ctx.fillRect(s.x * grid + 2, s.y * grid + 2, grid - 4, grid - 4);
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ミニ将棋 - ゲーム王国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      text-align: center;
+    }
+
+    .title {
+      font-family: "Cinzel", serif;
+      font-size: 2.2rem;
+      margin: 20px 0 10px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      width: 300px;
+      margin: 20px auto;
+      border: 2px solid #555;
+      background: #c9a96a;
+    }
+
+    .cell {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border: 1px solid #555;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #e0c48a;
+      position: relative;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .cell:nth-child(odd) {
+      background: #d6b97a;
+    }
+
+    /* 駒（将棋っぽい六角形） */
+    .piece {
+      width: 80%;
+      height: 80%;
+      background: #f5deb3;
+      border: 2px solid #8b6f47;
+      clip-path: polygon(50% 0%, 90% 20%, 90% 80%, 50% 100%, 10% 80%, 10% 20%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #000;
+      user-select: none;
+    }
+
+    .S .piece { transform: rotate(0deg); }
+    .G .piece { transform: rotate(180deg); }
+
+    /* 動ける場所（オセロと同じ薄い白） */
+    .movable {
+      background: rgba(255, 255, 255, 0.35) !important;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1 class="title">ミニ将棋（5×5）</h1>
+  <p class="subtitle">▲Player1 と △Player2 の対戦</p>
+
+  <div id="status" class="status"></div>
+
+  <div id="board" class="board"></div>
+
+  <div style="margin-top:20px;">
+    <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
+  </div>
+
+  <script src="common.js"></script>
+
+  <script>
+    const SIZE = 5;
+    let board = [];
+    let current = "S";
+    let selected = null;
+    let gameOver = false;
+
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
+
+    function initBoard() {
+      board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+
+      board[0] = [
+        { type: "R", owner: "G" },
+        { type: "S", owner: "G" },
+        { type: "K", owner: "G" },
+        { type: "G", owner: "G" },
+        { type: "B", owner: "G" }
+      ];
+      board[1][2] = { type: "P", owner: "G" };
+
+      board[4] = [
+        { type: "B", owner: "S" },
+        { type: "G", owner: "S" },
+        { type: "K", owner: "S" },
+        { type: "S", owner: "S" },
+        { type: "R", owner: "S" }
+      ];
+      board[3][2] = { type: "P", owner: "S" };
+
+      selected = null;
+      gameOver = false;
+
+      renderBoard();
+      updateStatus();
+    }
+
+    function pieceChar(piece) {
+      const map = { P:"歩", G:"金", S:"銀", B:"角", R:"飛", K:"玉" };
+      return map[piece.type];
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+
+      const moves = selected ? getMoves(selected.x, selected.y) : [];
+
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.x = x;
+          cell.dataset.y = y;
+
+          if (moves.some(m => m.x === x && m.y === y)) {
+            cell.classList.add("movable");
+          }
+
+          const piece = board[y][x];
+          if (piece) {
+            const p = document.createElement("div");
+            p.className = "piece";
+            p.textContent = pieceChar(piece);
+            cell.classList.add(piece.owner);
+            cell.appendChild(p);
+          }
+
+          cell.onclick = () => onCellClick(x, y);
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function updateStatus() {
+      if (gameOver) return;
+      statusEl.textContent = current === "S"
+        ? "▲Player1 の番"
+        : "△Player2 の番";
+    }
+
+    function onCellClick(x, y) {
+      if (gameOver) return;
+
+      const piece = board[y][x];
+
+      if (!selected) {
+        if (piece && piece.owner === current) {
+          selected = { x, y };
+          renderBoard();
+        }
+        return;
+      }
+
+      if (piece && piece.owner === current) {
+        selected = { x, y };
+        renderBoard();
+        return;
+      }
+
+      const moves = getMoves(selected.x, selected.y);
+      if (!moves.some(m => m.x === x && m.y === y)) {
+        selected = null;
+        renderBoard();
+        return;
+      }
+
+      movePiece(selected.x, selected.y, x, y);
+      selected = null;
+      renderBoard();
+      checkGameOver();
+      if (!gameOver) {
+        current = current === "S" ? "G" : "S";
+        updateStatus();
+      }
+    }
+
+    function movePiece(sx, sy, dx, dy) {
+      const piece = board[sy][sx];
+      const target = board[dy][dx];
+
+      if (target && target.type === "K") {
+        board[dy][dx] = piece;
+        board[sy][sx] = null;
+        gameOver = true;
+        statusEl.textContent = piece.owner === "S"
+          ? "▲Player1 の勝ち！"
+          : "△Player2 の勝ち！";
+        return;
+      }
+
+      board[dy][dx] = piece;
+      board[sy][sx] = null;
+    }
+
+    function checkGameOver() {
+      let hasS = false, hasG = false;
+
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const p = board[y][x];
+          if (!p) continue;
+          if (p.type === "K") {
+            if (p.owner === "S") hasS = true;
+            if (p.owner === "G") hasG = true;
+          }
+        }
+      }
+
+      if (!hasS || !hasG) gameOver = true;
+    }
+
+    function getMoves(x, y) {
+      const piece = board[y][x];
+      const dir = piece.owner === "S" ? -1 : 1;
+      const moves = [];
+
+      function add(nx, ny) {
+        if (nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE) return;
+        const t = board[ny][nx];
+        if (!t || t.owner !== piece.owner) moves.push({ x: nx, y: ny });
+      }
+
+      function slide(dx, dy) {
+        let nx = x + dx, ny = y + dy;
+        while (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
+          const t = board[ny][nx];
+          if (!t) moves.push({ x: nx, y: ny });
+          else {
+            if (t.owner !== piece.owner) moves.push({ x: nx, y: ny });
+            break;
+          }
+          nx += dx; ny += dy;
+        }
+      }
+
+      switch (piece.type) {
+        case "P":
+          add(x, y + dir);
+          break;
+        case "K":
+          for (let dx = -1; dx <= 1; dx++)
+            for (let dy = -1; dy <= 1; dy++)
+              if (dx || dy) add(x + dx, y + dy);
+          break;
+        case "G":
+          [[0,dir],[-1,0],[1,0],[0,-dir],[-1,dir],[1,dir]]
+            .forEach(([dx,dy]) => add(x+dx,y+dy));
+          break;
+        case "S":
+          [[0,dir],[-1,dir],[1,dir],[-1,-dir],[1,-dir]]
+            .forEach(([dx,dy]) => add(x+dx,y+dy));
+          break;
+        case "B":
+          slide(1,1); slide(1,-1); slide(-1,1); slide(-1,-1);
+          break;
+        case "R":
+          slide(1,0); slide(-1,0); slide(0,1); slide(0,-1);
+          break;
+      }
+
+      return moves;
+    }
+
+    initBoard();
+  </script>
+
+</body>
+</html>

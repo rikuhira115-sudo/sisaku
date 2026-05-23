@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>5目並べ - ゲーム王国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- 豪華デザインCSS -->
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* ===== 5目並べ専用デザイン ===== */
+
+    .gomoku-board {
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      gap: 2px;
+      background: #c89f6a;
+      padding: 6px;
+      border-radius: 8px;
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
+      margin: 0 auto 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .gomoku-cell {
+      background: #e0b878;
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .gomoku-cell::before {
+      content: "";
+      position: absolute;
+      inset: 15%;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .gomoku-cell.black::before {
+      opacity: 1;
+      background: radial-gradient(circle at 30% 30%, #666, #000);
+    }
+    .gomoku-cell.white::before {
+      opacity: 1;
+      background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+    }
+
+    .gomoku-status {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #ffe08a;
+      text-shadow: 0 0 6px rgba(255,200,100,0.6);
+    }
+
+    /* ===== 豪華勝利ウィンドウ ===== */
+    .gomoku-win-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .gomoku-win-box {
+      background: linear-gradient(135deg, #fff7d1, #ffe08a);
+      color: #3b2a00;
+      padding: 30px 40px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 85%;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      animation: winPulse 1.6s infinite ease-in-out;
+    }
+
+    @keyframes winPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .gomoku-win-message {
+      font-size: 2.4rem;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.8);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <h1 class="title">5目並べ</h1>
+    <p class="subtitle">黒（先手）と白（後手）が交互に打ちます</p>
+
+    <div id="gomoku-status" class="gomoku-status"></div>
+
+    <div id="gomoku-board" class="gomoku-board"></div>
+
+    <div class="text-center" style="margin-top: 10px;">
+      <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
+    </div>
+
+  </div>
+
+  <!-- 豪華勝利ウィンドウ -->
+  <div id="gomoku-win" class="gomoku-win-overlay">
+    <div class="gomoku-win-box">
+      <div id="gomoku-win-message" class="gomoku-win-message"></div>
+      <button class="btn" onclick="resetGomoku()">もう一回</button>
+      <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
+    </div>
+  </div>
+
+  <!-- 豪華演出JS -->
+  <script src="common.js"></script>
+
+  <script>
+    /* ===== 5目並べロジック ===== */
+
+    const BOARD_SIZE = 15;
+    let gomokuBoard = [];
+    let gomokuCurrent = 'black';
+    let gomokuGameOver = false;
+
+    const boardEl = document.getElementById('gomoku-board');
+    const statusEl = document.getElementById('gomoku-status');
+    const winOverlay = document.getElementById("gomoku-win");
+    const winMessage = document.getElementById("gomoku-win-message");
+
+    function initGomokuBoard() {
+      gomokuBoard = [];
+      boardEl.innerHTML = '';
+      hideWin();
+
+      for (let y = 0; y < BOARD_SIZE; y++) {
+        const row = [];
+        for (let x = 0; x < BOARD_SIZE; x++) {
+          row.push(null);
+          const cell = document.createElement('div');
+          cell.className = 'gomoku-cell';
+          cell.dataset.x = x;
+          cell.dataset.y = y;
+          cell.addEventListener('click', onGomokuCellClick, { passive: true });
+          boardEl.appendChild(cell);
+        }
+        gomokuBoard.push(row);
+      }
+
+      gomokuCurrent = 'black';
+      gomokuGameOver = false;
+      updateGomokuStatus();
+    }
+
+    function updateGomokuStatus(message) {
+      if (message) {
+        statusEl.textContent = message;
+        return;
+      }
+      statusEl.textContent =
+        gomokuCurrent === 'black' ? "黒（先手）の番です" : "白（後手）の番です";
+    }
+
+    function onGomokuCellClick(e) {
+      if (gomokuGameOver) return;
+
+      const cell = e.currentTarget;
+      const x = parseInt(cell.dataset.x);
+      const y = parseInt(cell.dataset.y);
+
+      if (gomokuBoard[y][x] !== null) return;
+
+      gomokuBoard[y][x] = gomokuCurrent;
+      cell.classList.add(gomokuCurrent);
+
+      if (checkGomokuWin(x, y, gomokuCurrent)) {
+        gomokuGameOver = true;
+        const winner = gomokuCurrent === 'black' ? "黒（先手）の勝ち！" : "白（後手）の勝ち！";
+        showWin(winner);
+        launchConfettiGlobal(40);
+        return;
+      }
+
+      if (isBoardFull()) {
+        gomokuGameOver = true;
+        showWin("引き分け！");
+        return;
+      }
+
+      gomokuCurrent = gomokuCurrent === 'black' ? 'white' : 'black';
+      updateGomokuStatus();
+    }
+
+    function isBoardFull() {
+      return gomokuBoard.every(row => row.every(cell => cell !== null));
+    }
+
+    function checkGomokuWin(x, y, color) {
+      const dirs = [
+        { dx: 1, dy: 0 },
+        { dx: 0, dy: 1 },
+        { dx: 1, dy: 1 },
+        { dx: 1, dy: -1 }
+      ];
+
+      for (const d of dirs) {
+        let count = 1;
+
+        let nx = x + d.dx, ny = y + d.dy;
+        while (inBoard(nx, ny) && gomokuBoard[ny][nx] === color) {
+          count++; nx += d.dx; ny += d.dy;
+        }
+
+        nx = x - d.dx; ny = y - d.dy;
+        while (inBoard(nx, ny) && gomokuBoard[ny][nx] === color) {
+          count++; nx -= d.dx; ny -= d.dy;
+        }
+
+        if (count >= 5) return true;
+      }
+      return false;
+    }
+
+    function inBoard(x, y) {
+      return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+    }
+
+    function showWin(message) {
+      winMessage.textContent = message;
+      winOverlay.style.display = "flex";
+    }
+
+    function hideWin() {
+      winOverlay.style.display = "none";
+    }
+
+    function resetGomoku() {
+      initGomokuBoard();
+    }
+
+    initGomokuBoard();
+  </script>
+</body>
+</html>

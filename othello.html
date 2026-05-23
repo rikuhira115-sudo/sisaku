@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>オセロ - ゲーム王国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: "Segoe UI", sans-serif;
+      text-align: center;
+    }
+
+    .title {
+      font-family: "Cinzel", serif;
+      font-size: 2.4rem;
+      margin: 20px 0 10px;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      width: 320px;
+      margin: 20px auto;
+      gap: 2px;
+      background: #0a5c0a;
+      padding: 6px;
+      border-radius: 8px;
+    }
+
+    .cell {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #0f7c0f;
+      border-radius: 4px;
+      position: relative;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    /* 置ける場所のハイライト */
+    .valid {
+      background: #1aa31a !important;
+    }
+
+    .stone {
+      position: absolute;
+      inset: 15%;
+      border-radius: 50%;
+    }
+
+    .black {
+      background: radial-gradient(circle at 30% 30%, #555, #000);
+    }
+
+    .white {
+      background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .btn-area {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1 class="title">オセロ</h1>
+  <p class="subtitle">置ける場所がハイライトされます</p>
+
+  <div id="status" class="status"></div>
+
+  <div id="board" class="board"></div>
+
+  <div class="btn-area">
+    <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
+  </div>
+
+  <script src="common.js"></script>
+
+  <script>
+    const SIZE = 8;
+    let board = [];
+    let current = "black";
+    let gameOver = false;
+
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
+
+    function initBoard() {
+      board = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+      boardEl.innerHTML = "";
+      gameOver = false;
+
+      // 初期配置
+      board[3][3] = "white";
+      board[3][4] = "black";
+      board[4][3] = "black";
+      board[4][4] = "white";
+
+      renderBoard();
+      updateStatus();
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+
+      const validMoves = getAllValidMoves(current);
+
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.x = x;
+          cell.dataset.y = y;
+          cell.onclick = () => placeStone(x, y);
+
+          // ハイライト
+          if (validMoves.some(m => m.x === x && m.y === y)) {
+            cell.classList.add("valid");
+          }
+
+          if (board[y][x]) {
+            const stone = document.createElement("div");
+            stone.className = "stone " + board[y][x];
+            cell.appendChild(stone);
+          }
+
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function updateStatus() {
+      statusEl.textContent = current === "black"
+        ? "黒の番です"
+        : "白の番です";
+    }
+
+    function placeStone(x, y) {
+      if (gameOver) return;
+      if (board[y][x] !== null) return;
+
+      const flips = getFlips(x, y, current);
+      if (flips.length === 0) return;
+
+      board[y][x] = current;
+      flips.forEach(([fx, fy]) => board[fy][fx] = current);
+
+      current = current === "black" ? "white" : "black";
+
+      if (!hasValidMove(current)) {
+        current = current === "black" ? "white" : "black";
+
+        if (!hasValidMove(current)) {
+          endGame();
+          return;
+        }
+      }
+
+      renderBoard();
+      updateStatus();
+    }
+
+    function getFlips(x, y, color) {
+      const dirs = [
+        [1, 0], [-1, 0], [0, 1], [0, -1],
+        [1, 1], [1, -1], [-1, 1], [-1, -1]
+      ];
+
+      const flips = [];
+
+      for (const [dx, dy] of dirs) {
+        let nx = x + dx;
+        let ny = y + dy;
+        const temp = [];
+
+        while (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
+          if (board[ny][nx] === null) break;
+          if (board[ny][nx] === color) {
+            if (temp.length > 0) flips.push(...temp);
+            break;
+          }
+          temp.push([nx, ny]);
+          nx += dx;
+          ny += dy;
+        }
+      }
+
+      return flips;
+    }
+
+    function getAllValidMoves(color) {
+      const moves = [];
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          if (board[y][x] === null && getFlips(x, y, color).length > 0) {
+            moves.push({ x, y });
+          }
+        }
+      }
+      return moves;
+    }
+
+    function hasValidMove(color) {
+      return getAllValidMoves(color).length > 0;
+    }
+
+    function endGame() {
+      gameOver = true;
+
+      let black = 0, white = 0;
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          if (board[y][x] === "black") black++;
+          if (board[y][x] === "white") white++;
+        }
+      }
+
+      let msg = "";
+      if (black > white) msg = "黒の勝ち！";
+      else if (white > black) msg = "白の勝ち！";
+      else msg = "引き分け！";
+
+      statusEl.textContent = `${msg}（黒 ${black} 枚 - 白 ${white} 枚）`;
+    }
+
+    initBoard();
+  </script>
+
+</body>
+</html>
+

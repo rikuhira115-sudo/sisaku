@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ゲーム王国</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .title {
+      font-family: "Cinzel", serif;
+      font-size: 2.8rem;
+      text-align: center;
+      margin: 25px 0 10px;
+    }
+
+    .section-title {
+      font-size: 1.6rem;
+      margin: 30px 0 10px;
+      text-align: center;
+      color: #4af;
+    }
+
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 20px 20px;
+    }
+
+    .game-card {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 14px;
+      padding: 18px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .game-card:hover {
+      transform: translateY(-4px);
+      background: #1a1a1a;
+      border-color: #555;
+    }
+
+    .game-icon {
+      font-size: 2.4rem;
+      margin-bottom: 10px;
+    }
+
+    .game-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1 class="title">ゲーム王国</h1>
+
+  <!-- 対戦ゲーム -->
+  <h2 class="section-title">対戦ゲーム</h2>
+
+  <div class="game-grid">
+
+    <div class="game-card" onclick="location.href='gomoku.html'">
+      <div class="game-icon">⭕</div>
+      <div class="game-name">5目並べ</div>
+    </div>
+
+    <div class="game-card" onclick="location.href='othello.html'">
+      <div class="game-icon">⚫</div>
+      <div class="game-name">オセロ</div>
+    </div>
+
+    <div class="game-card" onclick="location.href='memory.html'">
+      <div class="game-icon">🃏</div>
+      <div class="game-name">神経衰弱</div>
+    </div>
+
+    <div class="game-card" onclick="location.href='mini_shogi.html'">
+      <div class="game-icon">♟️</div>
+      <div class="game-name">ミニ将棋</div>
+    </div>
+
+    <div class="game-card" onclick="location.href='dots.html'">
+      <div class="game-icon">🔳</div>
+      <div class="game-name">ドット＆ボックス</div>
+    </div>
+
+  </div>
+
+  <!-- 1人用ゲーム -->
+  <h2 class="section-title">1人用ゲーム</h2>
+
+  <div class="game-grid">
+
+    <div class="game-card" onclick="location.href='snake.html'">
+      <div class="game-icon">🐍</div>
+      <div class="game-name">スネーク</div>
+    </div>
+
+  </div>
+
+  <script src="common.js"></script>
+</body>
+</html>
