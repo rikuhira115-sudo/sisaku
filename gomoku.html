@@ -2,227 +2,233 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>5目並べ - ゲーム王国</title>
+  <title>五目並べ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 豪華デザインCSS -->
-  <link rel="stylesheet" href="style.css">
-
   <style>
-    /* ===== 5目並べ専用デザイン ===== */
-
-    .gomoku-board {
-      display: grid;
-      grid-template-columns: repeat(15, 1fr);
-      gap: 2px;
-      background: #c89f6a;
-      padding: 6px;
-      border-radius: 8px;
-      max-width: 100%;
-      aspect-ratio: 1 / 1;
-      margin: 0 auto 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-
-    .gomoku-cell {
-      background: #e0b878;
-      border-radius: 2px;
-      position: relative;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .gomoku-cell::before {
-      content: "";
-      position: absolute;
-      inset: 15%;
-      border-radius: 50%;
-      opacity: 0;
-      transition: opacity 0.15s;
-    }
-
-    .gomoku-cell.black::before {
-      opacity: 1;
-      background: radial-gradient(circle at 30% 30%, #666, #000);
-    }
-    .gomoku-cell.white::before {
-      opacity: 1;
-      background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-    }
-
-    .gomoku-status {
+    body {
+      background: #000;
+      color: #fff;
       text-align: center;
-      margin-bottom: 10px;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    .title {
+      font-size: 2rem;
+      margin: 20px 0;
+    }
+
+    /* 豪華な碁盤 */
+    .board {
+      position: relative;
+      margin: 20px auto;
+      background: #c89b3c; /* 木目風 */
+      border: 6px solid #000;
+      box-shadow: 0 0 20px #000;
+    }
+
+    /* 線 */
+    .line {
+      position: absolute;
+      background: #000;
+    }
+
+    .v-line {
+      width: 2px;
+      height: 100%;
+    }
+
+    .h-line {
+      height: 2px;
+      width: 100%;
+    }
+
+    /* 交点の小さな点（豪華に） */
+    .dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #000;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.7;
+    }
+
+    /* 星（ほし） */
+    .star {
+      width: 12px;
+      height: 12px;
+      background: #000;
+      border-radius: 50%;
+      opacity: 0.9;
+    }
+
+    /* クリック判定用 */
+    .point {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+    }
+
+    /* 石（豪華版） */
+    .stone {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    .black {
+      background: radial-gradient(circle, #444, #000);
+    }
+
+    .white {
+      background: radial-gradient(circle, #fff, #ccc);
+      border: 1px solid #000;
+    }
+
+    .status {
+      margin-top: 10px;
       font-size: 1.2rem;
       font-weight: bold;
-      color: #ffe08a;
-      text-shadow: 0 0 6px rgba(255,200,100,0.6);
-    }
-
-    /* ===== 豪華勝利ウィンドウ ===== */
-    .gomoku-win-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-
-    .gomoku-win-box {
-      background: linear-gradient(135deg, #fff7d1, #ffe08a);
-      color: #3b2a00;
-      padding: 30px 40px;
-      border-radius: 16px;
-      text-align: center;
-      max-width: 85%;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-      animation: winPulse 1.6s infinite ease-in-out;
-    }
-
-    @keyframes winPulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    .gomoku-win-message {
-      font-size: 2.4rem;
-      font-weight: bold;
-      margin-bottom: 20px;
-      text-shadow: 0 0 10px rgba(255,255,255,0.8);
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
 
-    <h1 class="title">5目並べ</h1>
-    <p class="subtitle">黒（先手）と白（後手）が交互に打ちます</p>
+  <h1 class="title">五目並べ</h1>
+  <div id="status" class="status"></div>
 
-    <div id="gomoku-status" class="gomoku-status"></div>
-
-    <div id="gomoku-board" class="gomoku-board"></div>
-
-    <div class="text-center" style="margin-top: 10px;">
-      <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
-    </div>
-
-  </div>
-
-  <!-- 豪華勝利ウィンドウ -->
-  <div id="gomoku-win" class="gomoku-win-overlay">
-    <div class="gomoku-win-box">
-      <div id="gomoku-win-message" class="gomoku-win-message"></div>
-      <button class="btn" onclick="resetGomoku()">もう一回</button>
-      <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
-    </div>
-  </div>
-
-  <!-- 豪華演出JS -->
-  <script src="common.js"></script>
+  <div id="board" class="board"></div>
 
   <script>
-    /* ===== 5目並べロジック ===== */
+    const SIZE = 15;
+    const CELL = 30;
 
-    const BOARD_SIZE = 15;
-    let gomokuBoard = [];
-    let gomokuCurrent = 'black';
-    let gomokuGameOver = false;
+    const boardSize = (SIZE - 1) * CELL;
 
-    const boardEl = document.getElementById('gomoku-board');
-    const statusEl = document.getElementById('gomoku-status');
-    const winOverlay = document.getElementById("gomoku-win");
-    const winMessage = document.getElementById("gomoku-win-message");
+    let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    let current = 1;
+    let gameOver = false;
 
-    function initGomokuBoard() {
-      gomokuBoard = [];
-      boardEl.innerHTML = '';
-      hideWin();
+    const boardEl = document.getElementById("board");
+    const statusEl = document.getElementById("status");
 
-      for (let y = 0; y < BOARD_SIZE; y++) {
-        const row = [];
-        for (let x = 0; x < BOARD_SIZE; x++) {
-          row.push(null);
-          const cell = document.createElement('div');
-          cell.className = 'gomoku-cell';
-          cell.dataset.x = x;
-          cell.dataset.y = y;
-          cell.addEventListener('click', onGomokuCellClick, { passive: true });
-          boardEl.appendChild(cell);
+    function init() {
+      boardEl.style.width = boardSize + "px";
+      boardEl.style.height = boardSize + "px";
+
+      drawLines();
+      drawDots();
+      drawStars();
+      drawPoints();
+      updateStatus();
+    }
+
+    /* 線を描く（左右対称） */
+    function drawLines() {
+      for (let i = 0; i < SIZE; i++) {
+        const v = document.createElement("div");
+        v.className = "line v-line";
+        v.style.left = (i * CELL) + "px";
+        boardEl.appendChild(v);
+
+        const h = document.createElement("div");
+        h.className = "line h-line";
+        h.style.top = (i * CELL) + "px";
+        boardEl.appendChild(h);
+      }
+    }
+
+    /* 全交点に小さな点を置く */
+    function drawDots() {
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const d = document.createElement("div");
+          d.className = "dot";
+          d.style.left = (x * CELL) + "px";
+          d.style.top = (y * CELL) + "px";
+          boardEl.appendChild(d);
         }
-        gomokuBoard.push(row);
       }
-
-      gomokuCurrent = 'black';
-      gomokuGameOver = false;
-      updateGomokuStatus();
     }
 
-    function updateGomokuStatus(message) {
-      if (message) {
-        statusEl.textContent = message;
-        return;
-      }
-      statusEl.textContent =
-        gomokuCurrent === 'black' ? "黒（先手）の番です" : "白（後手）の番です";
-    }
-
-    function onGomokuCellClick(e) {
-      if (gomokuGameOver) return;
-
-      const cell = e.currentTarget;
-      const x = parseInt(cell.dataset.x);
-      const y = parseInt(cell.dataset.y);
-
-      if (gomokuBoard[y][x] !== null) return;
-
-      gomokuBoard[y][x] = gomokuCurrent;
-      cell.classList.add(gomokuCurrent);
-
-      if (checkGomokuWin(x, y, gomokuCurrent)) {
-        gomokuGameOver = true;
-        const winner = gomokuCurrent === 'black' ? "黒（先手）の勝ち！" : "白（後手）の勝ち！";
-        showWin(winner);
-        launchConfettiGlobal(40);
-        return;
-      }
-
-      if (isBoardFull()) {
-        gomokuGameOver = true;
-        showWin("引き分け！");
-        return;
-      }
-
-      gomokuCurrent = gomokuCurrent === 'black' ? 'white' : 'black';
-      updateGomokuStatus();
-    }
-
-    function isBoardFull() {
-      return gomokuBoard.every(row => row.every(cell => cell !== null));
-    }
-
-    function checkGomokuWin(x, y, color) {
-      const dirs = [
-        { dx: 1, dy: 0 },
-        { dx: 0, dy: 1 },
-        { dx: 1, dy: 1 },
-        { dx: 1, dy: -1 }
+    /* 星（ほし）を置く */
+    function drawStars() {
+      const stars = [
+        [3, 3], [3, 11],
+        [11, 3], [11, 11],
+        [7, 7] // 中央
       ];
 
-      for (const d of dirs) {
+      for (const [x, y] of stars) {
+        const s = document.createElement("div");
+        s.className = "dot star";
+        s.style.left = (x * CELL) + "px";
+        s.style.top = (y * CELL) + "px";
+        boardEl.appendChild(s);
+      }
+    }
+
+    /* クリック判定用ポイント */
+    function drawPoints() {
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const p = document.createElement("div");
+          p.className = "point";
+          p.style.left = (x * CELL) + "px";
+          p.style.top = (y * CELL) + "px";
+          p.onclick = () => placeStone(x, y);
+          boardEl.appendChild(p);
+        }
+      }
+    }
+
+    /* 石を置く */
+    function placeStone(x, y) {
+      if (gameOver) return;
+      if (board[y][x] !== 0) return;
+
+      board[y][x] = current;
+
+      const stone = document.createElement("div");
+      stone.className = "stone " + (current === 1 ? "black" : "white");
+      stone.style.left = (x * CELL) + "px";
+      stone.style.top = (y * CELL) + "px";
+      boardEl.appendChild(stone);
+
+      if (checkWin(x, y)) {
+        statusEl.textContent = (current === 1 ? "黒" : "白") + "の勝ち！";
+        gameOver = true;
+        return;
+      }
+
+      current = current === 1 ? 2 : 1;
+      updateStatus();
+    }
+
+    /* 勝利判定 */
+    function checkWin(x, y) {
+      const dirs = [
+        [1, 0], [0, 1], [1, 1], [1, -1]
+      ];
+
+      for (const [dx, dy] of dirs) {
         let count = 1;
 
-        let nx = x + d.dx, ny = y + d.dy;
-        while (inBoard(nx, ny) && gomokuBoard[ny][nx] === color) {
-          count++; nx += d.dx; ny += d.dy;
+        let nx = x + dx, ny = y + dy;
+        while (board[ny] && board[ny][nx] === current) {
+          count++; nx += dx; ny += dy;
         }
 
-        nx = x - d.dx; ny = y - d.dy;
-        while (inBoard(nx, ny) && gomokuBoard[ny][nx] === color) {
-          count++; nx -= d.dx; ny -= d.dy;
+        nx = x - dx; ny = y - dy;
+        while (board[ny] && board[ny][nx] === current) {
+          count++; nx -= dx; ny -= dy;
         }
 
         if (count >= 5) return true;
@@ -230,24 +236,12 @@
       return false;
     }
 
-    function inBoard(x, y) {
-      return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+    function updateStatus() {
+      statusEl.textContent = current === 1 ? "黒の番" : "白の番";
     }
 
-    function showWin(message) {
-      winMessage.textContent = message;
-      winOverlay.style.display = "flex";
-    }
-
-    function hideWin() {
-      winOverlay.style.display = "none";
-    }
-
-    function resetGomoku() {
-      initGomokuBoard();
-    }
-
-    initGomokuBoard();
+    init();
   </script>
+
 </body>
 </html>
