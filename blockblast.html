@@ -163,7 +163,7 @@ function startDrag(s,i){
 function moveDrag(){
   if(!drag)return;
   const g=document.getElementById("dragGhost");
-  g.style.left=mx+5+"px";g.style.top=my+5+"px";
+  g.style.left=(mx-20)+"px";g.style.top=(my-50)+"px";
 
   const rect=document.getElementById("board").getBoundingClientRect();
   const x=Math.floor((mx-rect.left)/32);
