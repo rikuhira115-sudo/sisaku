@@ -5,8 +5,6 @@
   <title>ドット＆ボックス - ゲーム王国</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="style.css">
-
   <style>
     body {
       background: #000;
@@ -21,11 +19,8 @@
       margin: 20px 0 10px;
     }
 
-    /* ===== 盤全体（7×7 の均等グリッド） ===== */
     .board {
       display: grid;
-      grid-template-columns: repeat(7, 48px);
-      grid-template-rows: repeat(7, 48px);
       gap: 0;
       margin: 20px auto;
       width: max-content;
@@ -34,7 +29,6 @@
       border-radius: 10px;
     }
 
-    /* ===== 点 ===== */
     .dot {
       width: 14px;
       height: 14px;
@@ -43,7 +37,6 @@
       margin: auto;
     }
 
-    /* ===== 線（点と点の間にぴったり） ===== */
     .h-line, .v-line {
       background: #444;
       cursor: pointer;
@@ -51,29 +44,22 @@
     }
 
     .h-line {
-      height: 10px;
+      height: 12px;
       width: 100%;
       margin: auto 0;
-      border-radius: 5px;
+      border-radius: 6px;
     }
 
     .v-line {
-      width: 10px;
+      width: 12px;
       height: 100%;
       margin: 0 auto;
-      border-radius: 5px;
+      border-radius: 6px;
     }
 
-    /* ===== 線の色（プレイヤー） ===== */
-    .p1-line {
-      background: #4aa8ff !important;
-    }
+    .p1-line { background: #4aa8ff !important; }
+    .p2-line { background: #ff5c5c !important; }
 
-    .p2-line {
-      background: #ff5c5c !important;
-    }
-
-    /* ===== マス（四角） ===== */
     .box {
       width: 100%;
       height: 100%;
@@ -82,18 +68,42 @@
       transition: 0.2s;
     }
 
-    .p1-box {
-      background: rgba(80, 160, 255, 0.45);
-    }
-
-    .p2-box {
-      background: rgba(255, 80, 80, 0.45);
-    }
+    .p1-box { background: rgba(80, 160, 255, 0.45); }
+    .p2-box { background: rgba(255, 80, 80, 0.45); }
 
     .status {
       margin-top: 10px;
       font-size: 1.1rem;
       font-weight: bold;
+    }
+
+    /* ===== サイズ選択画面 ===== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .overlay button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      font-size: 1.2rem;
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .overlay button:hover {
+      background: #444;
     }
   </style>
 </head>
@@ -109,13 +119,18 @@
   <div id="board" class="board"></div>
 
   <div style="margin-top:20px;">
-    <button class="btn secondary" onclick="location.href='index.html'">タイトルに戻る</button>
+    <button onclick="location.href='index.html'">タイトルに戻る</button>
   </div>
 
-  <script src="common.js"></script>
+  <!-- ===== サイズ選択画面 ===== -->
+  <div id="sizeSelect" class="overlay">
+    <div>サイズを選んでね</div>
+    <button onclick="startGame(4)">4 × 4</button>
+    <button onclick="startGame(5)">5 × 5</button>
+  </div>
 
   <script>
-    /* ===== データ構造 ===== */
+    let SIZE = 5;
     let currentP = 1;
     let hLines = [];
     let vLines = [];
@@ -128,14 +143,23 @@
     const statusEl = document.getElementById("status");
     const scoreEl = document.getElementById("score");
 
+    function startGame(size) {
+      SIZE = size;
+      document.getElementById("sizeSelect").style.display = "none";
+      init();
+    }
+
     function init() {
-      hLines = Array.from({ length: 4 }, () => Array(5).fill(0));
-      vLines = Array.from({ length: 5 }, () => Array(4).fill(0));
-      boxes = Array.from({ length: 4 }, () => Array(4).fill(0));
+      hLines = Array.from({ length: SIZE + 1 }, () => Array(SIZE).fill(0));
+      vLines = Array.from({ length: SIZE }, () => Array(SIZE + 1).fill(0));
+      boxes = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
       scoreP1 = 0;
       scoreP2 = 0;
       currentP = 1;
       gameOver = false;
+
+      boardEl.style.gridTemplateColumns = `repeat(${SIZE * 2 + 1}, 40px)`;
+      boardEl.style.gridTemplateRows = `repeat(${SIZE * 2 + 1}, 40px)`;
 
       render();
       updateStatus();
@@ -144,8 +168,8 @@
     function render() {
       boardEl.innerHTML = "";
 
-      for (let gy = 0; gy < 7; gy++) {
-        for (let gx = 0; gx < 7; gx++) {
+      for (let gy = 0; gy < SIZE * 2 + 1; gy++) {
+        for (let gx = 0; gx < SIZE * 2 + 1; gx++) {
 
           const isDot = gx % 2 === 0 && gy % 2 === 0;
           const isH = gx % 2 === 1 && gy % 2 === 0;
@@ -161,6 +185,7 @@
           else if (isH) {
             const x = (gx - 1) / 2;
             const y = gy / 2;
+
             const line = document.createElement("div");
             line.className = "h-line";
 
@@ -174,6 +199,7 @@
           else if (isV) {
             const x = gx / 2;
             const y = (gy - 1) / 2;
+
             const line = document.createElement("div");
             line.className = "v-line";
 
@@ -187,6 +213,7 @@
           else if (isBox) {
             const x = (gx - 1) / 2;
             const y = (gy - 1) / 2;
+
             const box = document.createElement("div");
             box.className = "box";
 
@@ -237,7 +264,7 @@
         }
       }
 
-      if (y < 4 && isBoxComplete(x, y)) {
+      if (y < SIZE && isBoxComplete(x, y)) {
         if (boxes[y][x] === 0) {
           boxes[y][x] = currentP;
           gained++;
@@ -260,7 +287,7 @@
         }
       }
 
-      if (x < 4 && isBoxComplete(x, y)) {
+      if (x < SIZE && isBoxComplete(x, y)) {
         if (boxes[y][x] === 0) {
           boxes[y][x] = currentP;
           gained++;
@@ -294,11 +321,11 @@
 
     function checkGameOver() {
       let total = 0;
-      for (let y = 0; y < 4; y++)
-        for (let x = 0; x < 4; x++)
+      for (let y = 0; y < SIZE; y++)
+        for (let x = 0; x < SIZE; x++)
           if (boxes[y][x] !== 0) total++;
 
-      if (total === 16) {
+      if (total === SIZE * SIZE) {
         gameOver = true;
         let msg = "";
 
@@ -310,7 +337,6 @@
       }
     }
 
-    init();
   </script>
 
 </body>
