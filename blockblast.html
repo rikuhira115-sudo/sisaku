@@ -40,7 +40,6 @@
 
 <h1>Block Blast 8×8</h1>
 
-<!-- ★ タイトルに戻るボタン ★ -->
 <button id="backBtn" onclick="location.href='index.html'">← タイトルに戻る</button>
 
 <div id="score">スコア: 0</div>
@@ -80,7 +79,7 @@ function canPlaceAnywhere(shape){
   return false;
 }
 
-/* ====== ピース生成（本家3要素再現） ====== */
+/* ====== ピース生成 ====== */
 function genPiece(){
   let s;
   do s=Math.random()<0.7?easy[Math.floor(Math.random()*easy.length)]
@@ -162,24 +161,29 @@ function startDrag(s,i){
 
 function moveDrag(){
   if(!drag)return;
+
   const g=document.getElementById("dragGhost");
-  g.style.left=(mx-20)+"px";g.style.top=(my-50)+"px";
+  g.style.left = mx + 5 + "px";
+  g.style.top  = (my - 70) + "px";  /* ← 指より70px上に表示 */
 
   const rect=document.getElementById("board").getBoundingClientRect();
-  const x=Math.floor((mx-rect.left)/32);
-  const y=Math.floor((my-rect.top)/32);
+  const x=Math.floor((mx - rect.left) / 32);
+  const y=Math.floor(((my - 70) - rect.top) / 32); /* ← ガイドも70px上 */
 
   document.querySelectorAll(".cell").forEach(c=>c.classList.remove("guide-ok","guide-ng"));
   if(x<0||y<0||x>=N||y>=N)return;
 
   const ok=canPlace(dragShape,x,y);
-  for(let sy=0;sy<dragShape.length;sy++)
-    for(let sx=0;sx<dragShape[0].length;sx++)
+
+  for(let sy=0;sy<dragShape.length;sy++){
+    for(let sx=0;sx<dragShape[0].length;sx++){
       if(dragShape[sy][sx]){
         const idx=(y+sy)*N+(x+sx);
-        const c=document.querySelectorAll(".cell")[idx];
-        if(c)c.classList.add(ok?"guide-ok":"guide-ng");
+        const cell=document.querySelectorAll(".cell")[idx];
+        if(cell) cell.classList.add(ok?"guide-ok":"guide-ng");
       }
+    }
+  }
 }
 
 function endDrag(){
@@ -189,7 +193,7 @@ function endDrag(){
 
   const rect=document.getElementById("board").getBoundingClientRect();
   const x=Math.floor((mx-rect.left)/32);
-  const y=Math.floor((my-rect.top)/32);
+  const y=Math.floor(((my-70)-rect.top)/32);
 
   document.querySelectorAll(".cell").forEach(c=>c.classList.remove("guide-ok","guide-ng"));
 
@@ -291,4 +295,3 @@ drawPieces();
 
 </body>
 </html>
-
