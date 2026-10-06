@@ -8,10 +8,10 @@ function index(r,c){return r*N+c}function reset(){mines=new Set();open=new Set()
 function neighbors(n){const r=Math.floor(n/N),c=n%N,out=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const rr=r+dr,cc=c+dc;if(rr>=0&&rr<N&&cc>=0&&cc<N)out.push(index(rr,cc))}return out}
 function plant(first){while(mines.size<MINES){const n=Math.floor(Math.random()*N*N);if(n!==first&&!neighbors(first).includes(n))mines.add(n)}}
 function count(n){return neighbors(n).filter(x=>mines.has(x)).length}
-function flood(start){const queue=[start],seen=new Set([start]);while(queue.length){const n=queue.shift();open.add(n);if(count(n)!==0)continue;for(const q of neighbors(n))if(!seen.has(q)&&!mines.has(q)&&!flags.has(q)){seen.add(q);queue.push(q)}}}
+function flood(start){open.add(start)}
 function reveal(n){if(over||flags.has(n)||open.has(n))return;if(!started){started=true;plant(n)}if(mines.has(n)){open.add(n);over=true;mines.forEach(m=>open.add(m));info.textContent="💥 地雷！";navigator.vibrate?.([80,40,80]);render();return}
 flood(n);const safe=N*N-mines.size;if(open.size>=safe){over=true;info.textContent="🎉 完全クリア！"}else info.textContent="安全 "+open.size+" / "+safe;render()}
 function render(){grid.innerHTML="";for(let n=0;n<N*N;n++){const b=document.createElement("button");b.className="cell";if(flags.has(n)&&!open.has(n)){b.classList.add("flag");b.textContent="🚩"}else if(open.has(n)){if(mines.has(n)){b.classList.add("mine");b.textContent="💣"}else{b.classList.add("open");const c=count(n);b.textContent=c||""}}b.onclick=()=>{if(over)return;if(flagMode){if(!open.has(n)){flags.has(n)?flags.delete(n):flags.add(n);render()}return}reveal(n)};grid.appendChild(b)}}
 flagBtn.onclick=()=>{if(over)return;flagMode=!flagMode;flagBtn.classList.toggle("on",flagMode);flagBtn.textContent="🚩 旗 "+(flagMode?"ON":"OFF")};
-GameKit.mount({title:"💣 ミニマイン",intro:"地雷を踏まずに安全なマスを全部開こう。端のマスも正しく処理されます。",howto:"最初に開いたマスと、その周囲には地雷が置かれません。数字は周囲8マスの地雷数です。地雷だと思う場所は旗モードで目印を付けられます。数字が0の安全地帯は自動で正しく開きますが、盤面の端で別の行へ飛び越えることはありません。",onStart:reset,onRestart:reset});reset();
+GameKit.mount({title:"💣 ミニマイン",intro:"地雷を踏まずに安全なマスを全部開こう。端のマスも正しく処理されます。",howto:"最初に開いたマスと、その周囲には地雷が置かれません。数字は周囲8マスの地雷数です。地雷だと思う場所は旗モードで目印を付けられます。1回のタップで開くのはそのマスだけです。周囲のマスが連鎖して勝手に開くことはありません。",onStart:reset,onRestart:reset});reset();
 </script></body></html>
