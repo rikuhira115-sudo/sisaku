@@ -1,8 +1,8 @@
 /* ゲーム王国 共通UI */
 (function(){
   const css=`
-  .kit-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px auto 14px;padding:0 10px}
-  .kit-btn{border:1px solid #34415a;background:#111827;color:#fff;border-radius:12px;padding:10px 15px;font-weight:800;cursor:pointer;touch-action:manipulation}
+  .kit-actions{display:flex;justify-content:center;gap:6px;flex-wrap:nowrap;margin:8px auto 10px;padding:0 6px}
+  .kit-btn{border:1px solid #34415a;background:#111827;color:#fff;border-radius:10px;padding:9px 10px;font-size:.78rem;line-height:1.1;font-weight:800;white-space:nowrap;cursor:pointer;touch-action:manipulation}
   .kit-btn.primary{background:#2563eb;border-color:#4f7cff}.kit-btn.start{background:#16a34a;border-color:#4ade80}
   .kit-btn:active{transform:scale(.96)}
   .kit-overlay,.kit-modal{position:fixed;inset:0;background:rgba(2,5,12,.86);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px;z-index:10000}
