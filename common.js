@@ -27,6 +27,7 @@
    const closeHow=()=>modal.classList.add("kit-hidden"),openHow=()=>modal.classList.remove("kit-hidden");
    const finish=(text)=>{if(finishLayer.classList.contains("kit-hidden")){document.getElementById("kitFinishText").textContent=text||"";finishLayer.classList.remove("kit-hidden")}};
    const closeFinish=()=>finishLayer.classList.add("kit-hidden");
+   GameKit.finish=finish;
    document.getElementById("kitAgain").onclick=()=>{closeFinish();if(o.onRestart)o.onRestart()};
    document.getElementById("kitBack").onclick=()=>location.href="index.html";
    const infoEl=document.getElementById("info");
