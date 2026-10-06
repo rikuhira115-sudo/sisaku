@@ -40,7 +40,6 @@ function legalDrops(st,owner,enforce=true){let out=[];for(const t of handTypes)i
 function allActions(st,owner,enforce=true){let a=[];for(let y=0;y<S;y++)for(let x=0;x<S;x++){let p=st.board[y][x];if(p&&p.owner===owner)legalMovesFromOwner(st,x,y,owner).forEach(([dx,dy])=>a.push({kind:"move",x,y,dx,dy}))}legalDrops(st,owner,enforce).forEach(d=>a.push({kind:"drop",...d}));return a}
 function legalMovesFromOwner(st,x,y,owner){let saved=turn;turn=owner;let m=legalMovesFrom(st,x,y);turn=saved;return m}
 function moveNeedsPromotion(p,sy,dy){return mustPromote(p,dy)||canPromote(p,sy,dy)}
-function performMove(sx,sy,dx,dy,promoted){let p=board[sy][sx];board=applyMove({board,hand},sx,sy,dx,dy,promoted).board;let ns=applyMove({board:arguments._oldBoard||[],hand:{}},sx,sy,dx,dy,promoted);void ns}
 function commitMove(sx,sy,dx,dy,promoted){let st={board,hand};let ns=applyMove(st,sx,sy,dx,dy,promoted);board=ns.board;hand=ns.hand;last=[sx,sy,dx,dy];selected=null;turn=other(turn);afterAction()}
 function commitDrop(type,x,y){hand[turn][type]--;board[y][x]=make(type,turn,false);last=["drop",x,y];selected=null;turn=other(turn);afterAction()}
 function afterAction(){render();let acts=allActions({board,hand},turn,true);if(!acts.length){gameOver=true;let winner=other(turn);statusEl.textContent=isCheck({board,hand},turn)?(winner==="s"?"🏆 先手の勝ち！ 詰み":"🏆 後手の勝ち！ 詰み"):"指せる手がなくなりました";noticeEl.textContent="最終局面です";render();return}updateStatus()}
