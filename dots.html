@@ -14,11 +14,11 @@ function addV(x,y){if(over||x<0||x>=S||y<0||y>=S-1||v[y][x])return;v[y][x]=p;let
 function hit(e){if(over)return;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*680/r.width,y=(e.clientY-r.top)*680/r.height;let best=null,dist=1e9;
 for(let yy=0;yy<S;yy++)for(let xx=0;xx<S-1;xx++){const d=Math.abs(y-yy*gap);const dx=Math.abs(x-(xx+.5)*gap);const q=Math.hypot(dx,d);if(q<dist){dist=q;best=["h",xx,yy]}}
 for(let yy=0;yy<S-1;yy++)for(let xx=0;xx<S;xx++){const d=Math.abs(x-xx*gap);const dy=Math.abs(y-(yy+.5)*gap);const q=Math.hypot(dy,d);if(q<dist){dist=q;best=["v",xx,yy]}}
-if(dist>38)return;if(best[0]==="h")addH(best[1],best[2]);else addV(best[1],best[2])}
+if(dist>82)return;if(best[0]==="h")addH(best[1],best[2]);else addV(best[1],best[2])}
 cv.addEventListener("pointerdown",hit);
 function draw(){ctx.clearRect(0,0,680,680);ctx.fillStyle="#172033";ctx.fillRect(0,0,680,680);for(let y=0;y<S-1;y++)for(let x=0;x<S-1;x++){if(boxes[y][x]){ctx.fillStyle=boxes[y][x]===1?"rgba(56,189,248,.35)":"rgba(251,113,133,.35)";ctx.fillRect(x*gap+10,y*gap+10,gap-20,gap-20)}}
-ctx.lineCap="round";ctx.lineWidth=18;for(let y=0;y<S;y++)for(let x=0;x<S-1;x++)if(h[y][x]){ctx.strokeStyle=h[y][x]===1?"#38bdf8":"#fb7185";ctx.beginPath();ctx.moveTo(x*gap,y*gap);ctx.lineTo((x+1)*gap,y*gap);ctx.stroke()}for(let y=0;y<S-1;y++)for(let x=0;x<S;x++)if(v[y][x]){ctx.strokeStyle=v[y][x]===1?"#38bdf8":"#fb7185";ctx.beginPath();ctx.moveTo(x*gap,y*gap);ctx.lineTo(x*gap,(y+1)*gap);ctx.stroke()}
-for(let y=0;y<S;y++)for(let x=0;x<S;x++){ctx.fillStyle="#f8fafc";ctx.beginPath();ctx.arc(x*gap,y*gap,10,0,Math.PI*2);ctx.fill()}}
+ctx.lineCap="round";ctx.lineWidth=24;for(let y=0;y<S;y++)for(let x=0;x<S-1;x++)if(h[y][x]){ctx.strokeStyle=h[y][x]===1?"#38bdf8":"#fb7185";ctx.beginPath();ctx.moveTo(x*gap,y*gap);ctx.lineTo((x+1)*gap,y*gap);ctx.stroke()}for(let y=0;y<S-1;y++)for(let x=0;x<S;x++)if(v[y][x]){ctx.strokeStyle=v[y][x]===1?"#38bdf8":"#fb7185";ctx.beginPath();ctx.moveTo(x*gap,y*gap);ctx.lineTo(x*gap,(y+1)*gap);ctx.stroke()}
+for(let y=0;y<S;y++)for(let x=0;x<S;x++){ctx.fillStyle="#f8fafc";ctx.beginPath();ctx.arc(x*gap,y*gap,12,0,Math.PI*2);ctx.fill()}}
 document.querySelectorAll("[data-s]").forEach(btn=>btn.onclick=()=>{document.querySelectorAll("[data-s]").forEach(x=>x.classList.remove("on"));btn.classList.add("on");reset(Number(btn.dataset.s))});
 GameKit.mount({title:"🔳 ドット＆ボックス",intro:"太い線をタップして四角を作る2人対戦です。",howto:"青からスタート。横か縦の線を1本タップして引きます。四角の4辺がそろったらその四角を獲得して1点、さらに続けて自分の番になります。すべての四角が埋まったとき、得点の多い方が勝ちです。",onStart:start,onRestart:start});reset();
 </script></body></html>
