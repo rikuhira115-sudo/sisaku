@@ -31,7 +31,7 @@
    document.getElementById("kitAgain").onclick=()=>{closeFinish();if(o.onRestart)o.onRestart()};
    document.getElementById("kitBack").onclick=()=>location.href="index.html";
    const infoEl=document.getElementById("info");
-   if(infoEl){let ready=true;const observer=new MutationObserver(()=>{if(!ready)return;const t=(infoEl.textContent||"").trim();if(/ゲームオーバー|勝ち|負け|引き分け|クリア|クリア！|全ブロック破壊|フライング|記録を保存|タイムアウト|終了/.test(t))finish(t)});observer.observe(infoEl,{childList:true,subtree:true,characterData:true})}
+   if(infoEl){let ready=true;const observer=new MutationObserver(()=>{if(!ready)return;const t=(infoEl.textContent||"").trim();if(/ゲームオーバー|勝ち|負け|引き分け|クリア|クリア！|全ブロック破壊|フライング|記録を保存|タイムアウト|時間切れ|失敗|終了/.test(t))finish(t)});observer.observe(infoEl,{childList:true,subtree:true,characterData:true})}
    restart.onclick=()=>{closeHow();closeFinish();if(o.onRestart)o.onRestart()};
    how.onclick=openHow;document.getElementById("kitClose").onclick=closeHow;
    back.onclick=()=>location.href="index.html";
