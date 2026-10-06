@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>コネクトフォー - ゲーム王国</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% -10%,#1c3158,#070a11 48%,#000);color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;min-height:100vh;overflow-x:hidden}
+h1{margin:18px 0 4px;font-size:clamp(1.7rem,7vw,2.3rem)}
+.info{min-height:30px;color:#cbd5e1;font-weight:900;font-size:1.05rem}
+.score{color:#8f9bb0;font-size:.82rem;margin-bottom:10px}
+.board{width:min(94vw,430px);margin:10px auto 22px;padding:9px;background:#1769c2;border:3px solid #0b3d78;border-radius:18px;box-shadow:0 12px 35px #0009;touch-action:manipulation}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+.cell{aspect-ratio:1;border:0;border-radius:50%;background:#07111e;box-shadow:inset 0 3px 5px #0009,0 1px 0 #ffffff22;cursor:pointer;padding:0;touch-action:manipulation}
+.cell.red{background:#ef4444;box-shadow:inset 0 3px 5px #7f1d1d,0 2px 5px #0008}
+.cell.yellow{background:#facc15;box-shadow:inset 0 3px 5px #854d0e,0 2px 5px #0008}
+.cell.win{outline:4px solid #fff;outline-offset:-5px;animation:pulse .65s infinite alternate}
+@keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.45)}}
+.columns{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-bottom:7px}
+.drop{border:0;background:#ffffff14;color:#dbeafe;border-radius:9px;padding:7px 0;font-weight:900;font-size:.8rem;touch-action:manipulation}
+.drop:active{transform:scale(.94);background:#ffffff25}
+.hint{color:#94a3b8;font-size:.76rem}
+</style>
+</head>
+<body>
+<h1>🔴🟡 コネクトフォー</h1>
+<div id="info" class="info">赤の番</div>
+<div class="score">4つ連続で並べたら勝ち！</div>
+<div class="board">
+  <div class="columns" id="columns"></div>
+  <div class="grid" id="grid"></div>
+</div>
+<div class="hint">列をタップしてコマを落とそう</div>
+<script src="common.js"></script>
+<script>
+const ROWS=6,COLS=7,grid=document.getElementById("grid"),columns=document.getElementById("columns"),info=document.getElementById("info");
+let board,turn,over,winCells;
+function reset(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  turn=1;over=false;winCells=[];
+  info.textContent="🔴 赤の番";
+  render();
+}
+function render(){
+  columns.innerHTML="";
+  for(let c=0;c<COLS;c++){
+    const b=document.createElement("button");
+    b.className="drop";b.textContent="▼";b.setAttribute("aria-label",(c+1)+"列に置く");
+    b.onclick=()=>drop(c);columns.appendChild(b);
+  }
+  grid.innerHTML="";
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const cell=document.createElement("button");
+    cell.className="cell "+(board[r][c]===1?"red":board[r][c]===2?"yellow":"");
+    if(winCells.some(p=>p[0]===r&&p[1]===c))cell.classList.add("win");
+    cell.onclick=()=>drop(c);
+    grid.appendChild(cell);
+  }
+}
+function drop(c){
+  if(over)return;
+  let r=-1;
+  for(let y=ROWS-1;y>=0;y--)if(board[y][c]===0){r=y;break}
+  if(r<0){info.textContent="その列はいっぱい！";return}
+  board[r][c]=turn;
+  const w=checkWin(r,c);
+  if(w.length){
+    winCells=w;over=true;
+    const name=turn===1?"🔴 赤":"🟡 黄";
+    info.textContent=name+"の勝ち！ 🎉";
+    navigator.vibrate?.([50,60,140]);
+    render();
+    GameKit.finish(name+"の勝ち！");
+    return;
+  }
+  if(board.every(row=>row.every(v=>v))){
+    over=true;info.textContent="引き分け！";
+    render();GameKit.finish("引き分け！");
+    return;
+  }
+  turn=3-turn;
+  info.textContent=(turn===1?"🔴 赤":"🟡 黄")+"の番";
+  render();
+}
+function checkWin(r,c){
+  const p=board[r][c],dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(const[dR,dC] of dirs){
+    let cells=[[r,c]];
+    for(const s of [1,-1]){
+      let y=r+dR*s,x=c+dC*s;
+      while(y>=0&&y<ROWS&&x>=0&&x<COLS&&board[y][x]===p){cells.push([y,x]);y+=dR*s;x+=dC*s}
+    }
+    if(cells.length>=4)return cells;
+  }
+  return [];
+}
+GameKit.mount({title:"コネクトフォー",howto:"赤と黄の2人対戦です。列をタップすると自分のコマが一番下の空いている場所に落ちます。横・縦・斜めのどれかに自分のコマを4つ連続で並べたら勝ちです。全部埋まって勝者がいなければ引き分けです。",onRestart:reset});
+reset();
+</script>
+</body>
+</html>
