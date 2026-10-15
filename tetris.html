@@ -59,7 +59,7 @@ h1{font-size:1.6rem;margin:5px 0 1px;font-weight:950;letter-spacing:.03em}
   <div class="sidebox"><h2>操作</h2><div class="mini-stat">← →<br>移動<br>↑ 回転<br>↓ 落下<br>Space<br>一気に落下<br>P 一時停止</div></div>
  </aside>
 </div>
-<div id="status" class="status" role="status" aria-live="polite">ゲーム開始！</div>
+<div id="status" class="status" role="status" aria-live="polite">スタートを押して開始</div>
 <div class="control-area">
  <div class="controls">
   <button class="ctrl" data-action="left" aria-label="左に移動">◀<span>左</span></button>
@@ -69,6 +69,7 @@ h1{font-size:1.6rem;margin:5px 0 1px;font-weight:950;letter-spacing:.03em}
   <button class="ctrl primary" data-action="drop" aria-label="一気に落下">⤓<span>落下</span></button>
  </div>
  <div style="display:flex;justify-content:center;gap:8px;margin-top:9px">
+  <button id="start" class="ctrl primary" style="font-size:.85rem;min-height:38px;min-width:110px">▶ スタート</button>
   <button id="pause" class="ctrl" style="font-size:.85rem;min-height:38px;min-width:110px">⏸ 一時停止</button>
   <button id="restart" class="ctrl" style="font-size:.85rem;min-height:38px;min-width:110px">↻ リスタート</button>
  </div>
@@ -90,7 +91,7 @@ const SHAPES={
 };
 const boardEl=document.getElementById("board"),nextEl=document.getElementById("next");
 const scoreEl=document.getElementById("score"),linesEl=document.getElementById("lines"),levelEl=document.getElementById("level"),bestEl=document.getElementById("best"),statusEl=document.getElementById("status"),pauseBtn=document.getElementById("pause");
-let grid,bag,queue,piece,score,lines,level,over,paused,timer,lastTick=0,dropInterval=700;
+let grid,bag,queue,piece,score,lines,level,over,paused,started,timer,dropInterval=700;
 let best=Number(localStorage.getItem("gameKingdomTetrisBest")||0);
 bestEl.textContent=best.toLocaleString("ja-JP");
 function newBag(){const a=Object.keys(SHAPES);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -98,7 +99,7 @@ function fillQueue(){while(queue.length<4){if(!bag.length)bag=newBag();queue.pus
 function rotateMatrix(m){return m[0].map((_,i)=>m.map(row=>row[i]).reverse())}
 function cellsFor(p){const out=[];p.matrix.forEach((row,y)=>row.forEach((v,x)=>{if(v)out.push([p.x+x,p.y+y])}));return out}
 function collides(p,dx=0,dy=0,matrix=p.matrix){for(let y=0;y<matrix.length;y++)for(let x=0;x<matrix[y].length;x++)if(matrix[y][x]){const nx=p.x+x+dx,ny=p.y+y+dy;if(nx<0||nx>=COLS||ny>=ROWS)return true;if(ny>=0&&grid[ny][nx])return true}return false}
-function spawn(){fillQueue();const type=queue.shift();fillQueue();const matrix=SHAPES[type].map(r=>r.slice());piece={type,matrix,x:Math.floor((COLS-matrix[0].length)/2),y:0};if(collides(piece)){endGame()}renderNext();render()}
+function spawn(){fillQueue();const type=queue.shift();if(!type||!SHAPES[type]){bag=[];queue=[];fillQueue()}const safeType=type&&SHAPES[type]?type:queue.shift();fillQueue();const matrix=SHAPES[safeType].map(r=>r.slice());piece={type:safeType,matrix,x:Math.floor((COLS-matrix[0].length)/2),y:0};renderNext();if(collides(piece))endGame();render()}
 function move(dx,dy){if(over||paused||!piece)return false;if(!collides(piece,dx,dy)){piece.x+=dx;piece.y+=dy;render();return true}return false}
 function softDrop(){if(over||paused)return;if(move(0,1)){score+=1;updateHud()}else lockPiece()}
 function hardDrop(){if(over||paused||!piece)return;let n=0;while(!collides(piece,0,1)){piece.y++;n++}score+=n*2;lockPiece()}
@@ -106,17 +107,18 @@ function rotate(){if(over||paused||!piece)return;const m=rotateMatrix(piece.matr
 function lockPiece(){if(!piece||over)return;for(const [x,y] of cellsFor(piece)){if(y<0){endGame();return}grid[y][x]={type:piece.type,color:COLORS[piece.type]}}piece=null;clearLines();updateHud();if(!over)spawn()}
 function clearLines(){let n=0;for(let y=ROWS-1;y>=0;){if(grid[y].every(Boolean)){grid.splice(y,1);grid.unshift(Array(COLS).fill(null));n++}else y++}if(n){lines+=n;const base=[0,100,300,500,800][n]||800;score+=base*level;statusEl.textContent=["","✨ SINGLE!","🔥 DOUBLE!","💥 TRIPLE!","🌟 TETRIS!!"][n]||"ラインクリア！";statusEl.className="status good";level=Math.floor(lines/10)+1;dropInterval=Math.max(90,700-(level-1)*55)}else{statusEl.textContent="ブロックを積んでラインをそろえよう";statusEl.className="status"}}
 function updateHud(){scoreEl.textContent=score.toLocaleString("ja-JP");linesEl.textContent=lines;levelEl.textContent=level;if(score>best){best=score;localStorage.setItem("gameKingdomTetrisBest",String(best));bestEl.textContent=best.toLocaleString("ja-JP")}}
-function renderNext(){nextEl.innerHTML="";const type=queue[0];const mat=SHAPES[type];for(let y=0;y<4;y++)for(let x=0;x<4;x++){const c=document.createElement("div");c.className="preview-cell";if(mat[y]&&mat[y][x]){c.classList.add("filled");c.style.setProperty("--c",COLORS[type])}nextEl.appendChild(c)}}
+function renderNext(){fillQueue();nextEl.innerHTML="";const type=queue[0];const mat=SHAPES[type];for(let y=0;y<4;y++)for(let x=0;x<4;x++){const c=document.createElement("div");c.className="preview-cell";if(mat&&mat[y]&&mat[y][x]){c.classList.add("filled");c.style.setProperty("--c",COLORS[type])}nextEl.appendChild(c)}}
 function render(){if(!grid)return;const view=grid.map(row=>row.map(v=>v?{...v}:null));if(piece&&!over){let ghost={...piece};while(!collides(ghost,0,1))ghost.y++;cellsFor(ghost).forEach(([x,y])=>{if(y>=0&&y<ROWS&&view[y][x]===null)view[y][x]={type:piece.type,color:COLORS[piece.type],ghost:true}});cellsFor(piece).forEach(([x,y])=>{if(y>=0&&y<ROWS)view[y][x]={type:piece.type,color:COLORS[piece.type]}})}boardEl.innerHTML="";for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const c=document.createElement("div"),v=view[y][x];c.className="cell";if(v){c.classList.add(v.ghost?"ghost":"filled");c.style.setProperty("--c",v.color)}boardEl.appendChild(c)}if(paused){statusEl.textContent="⏸ 一時停止中";statusEl.className="status warn"}}
-function endGame(){over=true;paused=false;clearInterval(timer);timer=null;pauseBtn.textContent="▶ 再開";statusEl.textContent="ゲームオーバー！ スコア "+score.toLocaleString("ja-JP");statusEl.className="status warn";render();if(window.GameKit&&GameKit.finish)GameKit.finish("ゲームオーバー！ スコア "+score.toLocaleString("ja-JP")+" / ベスト "+best.toLocaleString("ja-JP"))}
-function tick(){if(over||paused)return;if(!move(0,1))lockPiece()}
-function runTimer(){if(timer)clearInterval(timer);timer=setInterval(tick,dropInterval)}
-function togglePause(){if(over)return;paused=!paused;pauseBtn.textContent=paused?"▶ 再開":"⏸ 一時停止";if(paused){statusEl.textContent="⏸ 一時停止中";statusEl.className="status warn"}else{statusEl.textContent="再開！";statusEl.className="status";render()} }
-function reset(){if(timer)clearInterval(timer);grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));bag=[];queue=[];piece=null;score=0;lines=0;level=1;over=false;paused=false;dropInterval=700;pauseBtn.textContent="⏸ 一時停止";statusEl.textContent="ゲーム開始！";statusEl.className="status";fillQueue();updateHud();spawn();runTimer()}
+function endGame(){over=true;paused=false;started=false;clearInterval(timer);timer=null;document.getElementById("start").textContent="↻ もう一度";pauseBtn.textContent="▶ 再開";statusEl.textContent="ゲームオーバー！ スコア "+score.toLocaleString("ja-JP");statusEl.className="status warn";render();if(window.GameKit&&GameKit.finish)GameKit.finish("ゲームオーバー！ スコア "+score.toLocaleString("ja-JP")+" / ベスト "+best.toLocaleString("ja-JP"))}
+function tick(){if(!started||over||paused)return;if(!move(0,1))lockPiece()}
+function runTimer(){if(timer)clearInterval(timer);timer=null;if(started&&!over&&!paused)timer=setInterval(tick,dropInterval)}
+function startGame(){if(over){reset()}if(started)return;started=true;paused=false;document.getElementById("start").textContent="▶ プレイ中";spawn();runTimer();statusEl.textContent="ゲーム開始！";statusEl.className="status"}
+function togglePause(){if(!started&&!over){startGame();return}if(over)return;paused=!paused;pauseBtn.textContent=paused?"▶ 再開":"⏸ 一時停止";if(paused){if(timer)clearInterval(timer);timer=null;statusEl.textContent="⏸ 一時停止中";statusEl.className="status warn"}else{statusEl.textContent="再開！";statusEl.className="status";runTimer();render()} }
+function reset(){if(timer)clearInterval(timer);timer=null;grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));bag=[];queue=[];piece=null;score=0;lines=0;level=1;over=false;paused=false;started=false;dropInterval=700;pauseBtn.textContent="⏸ 一時停止";document.getElementById("start").textContent="▶ スタート";statusEl.textContent="スタートを押して開始";statusEl.className="status";fillQueue();renderNext();updateHud();render()}
 document.querySelectorAll("[data-action]").forEach(btn=>{const act=btn.dataset.action;const fire=()=>{if(act==="left")move(-1,0);else if(act==="right")move(1,0);else if(act==="rotate")rotate();else if(act==="down")softDrop();else if(act==="drop")hardDrop()};btn.addEventListener("click",fire);if(["left","right","down"].includes(act)){let repeat=null;btn.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse")return;e.preventDefault();fire();repeat=setInterval(fire,act==="down"?85:115)});const stop=()=>{if(repeat)clearInterval(repeat);repeat=null};btn.addEventListener("pointerup",stop);btn.addEventListener("pointercancel",stop);btn.addEventListener("pointerleave",stop)}});
-pauseBtn.addEventListener("click",togglePause);document.getElementById("restart").addEventListener("click",reset);
-document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key))e.preventDefault();if(e.key==="ArrowLeft")move(-1,0);else if(e.key==="ArrowRight")move(1,0);else if(e.key==="ArrowDown")softDrop();else if(e.key==="ArrowUp"||e.key==="x"||e.key==="X")rotate();else if(e.key===" ")hardDrop();else if(e.key==="p"||e.key==="P")togglePause();else if(e.key==="r"||e.key==="R")reset()});
-if(window.GameKit)GameKit.mount({title:"🟪 テトリス",howto:"左右ボタンまたは矢印キーで移動、回転ボタンまたは↑キーで回転、下ボタンまたは↓キーで少しずつ落下、落下ボタンまたはSpaceで一気に落下します。横一列がそろうと消えて得点になります。10ライン消すごとにレベルが上がり、落下速度も速くなります。Pキーまたは一時停止ボタンで止められます。",onRestart:reset});
+pauseBtn.addEventListener("click",togglePause);document.getElementById("start").addEventListener("click",startGame);document.getElementById("restart").addEventListener("click",reset);
+document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key))e.preventDefault();if(e.key==="Enter"&&!started){startGame();return}if(e.key==="ArrowLeft")move(-1,0);else if(e.key==="ArrowRight")move(1,0);else if(e.key==="ArrowDown")softDrop();else if(e.key==="ArrowUp"||e.key==="x"||e.key==="X")rotate();else if(e.key===" ")hardDrop();else if(e.key==="p"||e.key==="P")togglePause();else if(e.key==="r"||e.key==="R")reset()});
+if(window.GameKit)GameKit.mount({title:"🟪 テトリス",howto:"左右ボタンまたは矢印キーで移動、回転ボタンまたは↑キーで回転、下ボタンまたは↓キーで少しずつ落下、落下ボタンまたはSpaceで一気に落下します。横一列がそろうと消えて得点になります。10ライン消すごとにレベルが上がり、落下速度も速くなります。Pキーまたは一時停止ボタンで止められます。Enterキーまたはスタートボタンで開始します。",onRestart:reset});
 reset();
 </script>
 </body>
