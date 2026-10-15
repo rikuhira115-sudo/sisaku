@@ -59,6 +59,12 @@ h1{font-size:1.6rem;margin:5px 0 1px;font-weight:950;letter-spacing:.03em}
 @keyframes lineBurst{0%{background:#fff;border-color:#fff;transform:scale(.7);filter:brightness(2)}45%{background:#67e8f9;border-color:#fff;transform:scale(1.08);filter:brightness(1.7)}100%{background:#1a2434;border-color:#222f43;transform:scale(.85);opacity:.4}}
 @keyframes clearSweep{0%{transform:translateX(-110%);opacity:0}25%{opacity:1}100%{transform:translateX(110%);opacity:0}}
 @keyframes clearPop{0%{opacity:0;translate:-50% 15px;scale:.55}25%{opacity:1;translate:-50% 0;scale:1.12}65%{opacity:1;scale:1}100%{opacity:0;translate:-50% -24px;scale:.92}}
+.board.impact{animation:boardImpact .22s ease-out}
+@keyframes boardImpact{0%,100%{translate:0 0}20%{translate:-3px 1px}45%{translate:3px -1px}70%{translate:-2px 0}}
+.clear-particle{position:absolute;z-index:8;left:var(--x);top:var(--y);width:5px;height:10px;border-radius:2px;background:var(--p);pointer-events:none;box-shadow:0 0 8px var(--p);animation:particleBurst .55s ease-out forwards}
+@keyframes particleBurst{0%{opacity:1;translate:0 0;rotate:0deg;scale:1}100%{opacity:0;translate:var(--dx) var(--dy);rotate:var(--rot);scale:.2}}
+.drop-trail{position:absolute;z-index:3;left:var(--x);top:var(--y);width:calc(100% / 10 - 2px);height:var(--h);border-radius:3px;background:linear-gradient(180deg,transparent,#67e8f9aa);pointer-events:none;animation:trailFade .18s ease-out forwards}
+@keyframes trailFade{to{opacity:0;transform:translateY(8px)}}
 @media(max-width:350px){.controls{gap:6px}.ctrl[data-action="drop"],.ctrl[data-action="down"]{min-height:56px}.ctrl{min-height:48px}}
 @media(prefers-reduced-motion:reduce){.cell.line-clear,.board.clear-flash::after,.clear-label{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 </style>
@@ -111,7 +117,8 @@ const SHAPES={
 };
 const boardEl=document.getElementById("board"),nextEl=document.getElementById("next");
 const scoreEl=document.getElementById("score"),linesEl=document.getElementById("lines"),levelEl=document.getElementById("level"),bestEl=document.getElementById("best"),statusEl=document.getElementById("status"),pauseBtn=document.getElementById("pause"),startBtn=document.getElementById("start");
-let grid=[],bag=[],queue=[],piece=null,score=0,lines=0,level=1,gameOver=false,paused=false,started=false,clearing=false,clearRows=[],clearTimeoutId=null,timer=null,lastDrop=0,dropInterval=700;
+let grid=[],bag=[],queue=[],piece=null,score=0,lines=0,level=1,gameOver=false,paused=false,started=false,clearing=false,clearRows=[],clearTimeoutId=null,timer=null,lastDrop=0,dropInterval=700,groundedAt=0,lockResets=0,combo=0;
+const LOCK_DELAY=520,MAX_LOCK_RESETS=8;
 let best=0;
 try{best=Number(localStorage.getItem("gameKingdomTetrisBest")||0)||0}catch(_e){best=0}
 bestEl.textContent=best.toLocaleString("ja-JP");
@@ -223,9 +230,35 @@ function spawnPiece(){
  if(!SHAPES[type]){endGame();return}
  const matrix=SHAPES[type].map(row=>row.slice());
  piece={type,matrix,x:Math.floor((COLS-matrix[0].length)/2),y:0};
+ groundedAt=0;lockResets=0;
  renderNext();
  if(collides(piece)){endGame();return}
  render();
+}
+function spawnClearParticles(count){
+ const palette=["#67e8f9","#c084fc","#facc15","#fb7185","#ffffff"];
+ for(let i=0;i<Math.min(10+count*7,32);i++){
+  const p=document.createElement("i");
+  p.className="clear-particle";
+  p.style.setProperty("--x",(12+Math.random()*76)+"%");
+  p.style.setProperty("--y",(20+Math.random()*60)+"%");
+  p.style.setProperty("--dx",((Math.random()-.5)*180)+"px");
+  p.style.setProperty("--dy",(-20-Math.random()*150)+"px");
+  p.style.setProperty("--rot",((Math.random()-.5)*700)+"deg");
+  p.style.setProperty("--p",palette[Math.floor(Math.random()*palette.length)]);
+  boardEl.appendChild(p);
+  setTimeout(()=>p.remove(),650);
+ }
+}
+function showDropTrail(distance){
+ if(distance<5)return;
+ const p=document.createElement("i");
+ p.className="drop-trail";
+ p.style.setProperty("--x",((piece.x+0.5)/COLS*100)+"%");
+ p.style.setProperty("--y",Math.max(0,piece.y*100/ROWS)+"%");
+ p.style.setProperty("--h",Math.min(70,distance*100/ROWS)+"%");
+ boardEl.appendChild(p);
+ setTimeout(()=>p.remove(),220);
 }
 function finishLineClear(rows){
  const count=rows.length;
@@ -240,12 +273,20 @@ function finishLineClear(rows){
  updateHud();
  clearing=false;clearRows=[];clearTimeoutId=null;
  boardEl.classList.remove("clear-flash");
- setStatus(["","✨ SINGLE!","🔥 DOUBLE!","💥 TRIPLE!","🌟 TETRIS!!"][count]||"ラインクリア！","good");
+ boardEl.classList.remove("impact");
+ void boardEl.offsetWidth;
+ boardEl.classList.add("impact");
+ spawnClearParticles(count);
+ combo++;
+ const names={1:"✨ SINGLE!",2:"🔥 DOUBLE!",3:"💥 TRIPLE!",4:"🌟 TETRIS!!"};
+ const comboText=combo>1?"  COMBO ×"+combo:"";
+ setStatus((names[count]||"LINE CLEAR!")+comboText,"good");
  spawnPiece();
  render();
 }
 function lockPiece(){
  if(!piece||gameOver||clearing)return;
+ groundedAt=0;lockResets=0;
  const locked=cellsFor(piece);
  for(const [x,y] of locked){if(y<0){endGame();return}}
  for(const [x,y] of locked)grid[y][x]={type:piece.type,color:COLORS[piece.type]};
@@ -261,6 +302,7 @@ function lockPiece(){
   clearTimeoutId=setTimeout(()=>finishLineClear(fullRows),280);
   return;
  }
+ combo=0;
  setStatus("ブロックを積んでラインをそろえよう");
  spawnPiece();
  render();
@@ -268,16 +310,22 @@ function lockPiece(){
 function move(dx,dy){
  if(!started||gameOver||paused||clearing||!piece)return false;
  if(collides(piece,dx,dy))return false;
- piece.x+=dx;piece.y+=dy;render();return true;
+ const wasGrounded=collides(piece,0,1);
+ piece.x+=dx;piece.y+=dy;
+ if(dx!==0&&wasGrounded&&groundedAt&&lockResets<MAX_LOCK_RESETS){groundedAt=Date.now();lockResets++}
+ if(dy>0)groundedAt=0;
+ render();return true;
 }
 function softDrop(){
  if(!started||gameOver||paused||clearing||!piece)return;
- if(move(0,1)){score+=1;updateHud()}else lockPiece();
+ if(move(0,1)){score+=1;updateHud()}else if(!groundedAt)groundedAt=Date.now();
 }
 function hardDrop(){
  if(!started||gameOver||paused||clearing||!piece)return;
+ const startY=piece.y;
  let distance=0;
  while(!collides(piece,0,1)&&distance<ROWS){piece.y++;distance++}
+ showDropTrail(distance);
  score+=distance*2;
  lockPiece();
 }
@@ -285,16 +333,27 @@ function rotate(){
  if(!started||gameOver||paused||clearing||!piece)return;
  const matrix=rotateMatrix(piece.matrix);
  for(const kick of [0,-1,1,-2,2]){
-  if(!collides(piece,kick,0,matrix)){piece.matrix=matrix;piece.x+=kick;render();return}
+  if(!collides(piece,kick,0,matrix)){
+   const wasGrounded=collides(piece,0,1);
+   piece.matrix=matrix;piece.x+=kick;
+   if(wasGrounded&&groundedAt&&lockResets<MAX_LOCK_RESETS){groundedAt=Date.now();lockResets++}
+   render();return
+  }
  }
 }
 function loop(){
  if(!started||gameOver||paused||clearing||!piece)return;
  const now=Date.now();
+ if(collides(piece,0,1)){
+  if(!groundedAt)groundedAt=now;
+  if(now-groundedAt>=LOCK_DELAY)lockPiece();
+  return;
+ }
+ groundedAt=0;
  if(now-lastDrop>=dropInterval){
   lastDrop=now;
-  if(collides(piece,0,1))lockPiece();
-  else{piece.y++;render()}
+  if(collides(piece,0,1)){if(!groundedAt)groundedAt=now}
+  else{piece.y++;render();if(collides(piece,0,1))groundedAt=Date.now()}
  }
 }
 function startLoop(){stopLoop();lastDrop=Date.now();timer=setInterval(loop,35)}
@@ -317,7 +376,7 @@ function togglePause(){
 function reset(){
  stopLoop();
  grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
- bag=[];queue=[];piece=null;score=0;lines=0;level=1;
+ bag=[];queue=[];piece=null;score=0;lines=0;level=1;combo=0;groundedAt=0;lockResets=0;
  gameOver=false;paused=false;started=false;clearing=false;clearRows=[];dropInterval=700;lastDrop=0;
  ensureQueue();renderNext();updateHud();render();
  startBtn.textContent="▶ スタート";
