@@ -21,15 +21,13 @@
    const modal=document.createElement("div");modal.className="kit-modal kit-hidden";
    modal.innerHTML='<div class="kit-panel"><h2>📖 遊び方</h2><p>'+(o.howto||"画面の指示に従って遊んでください。")+'</p><div class="kit-row"><button class="kit-btn primary" id="kitClose">閉じる</button></div></div>';
    document.body.appendChild(modal);
-   const finishLayer=document.createElement("section");finishLayer.className="kit-result kit-hidden";finishLayer.id="kitFinish";
-   finishLayer.innerHTML='<div style="font-size:1.6rem" aria-hidden="true">🏁</div><h2 id="kitFinishTitle">ゲーム終了</h2><p id="kitFinishText"></p><div class="kit-row"><button class="kit-btn primary" id="kitAgain">もう一回</button><button class="kit-btn" id="kitBack">ゲーム王国へ戻る</button></div>';
-   document.body.appendChild(finishLayer);
+   const finishLayer=document.createElement("section");finishLayer.className="kit-result kit-hidden";finishLayer.id="kitFinish";finishLayer.setAttribute("role","status");finishLayer.setAttribute("aria-live","polite");
+   finishLayer.textContent="";
+   actions.insertAdjacentElement("afterend",finishLayer);
    const closeHow=()=>modal.classList.add("kit-hidden"),openHow=()=>modal.classList.remove("kit-hidden");
-   const finish=(text)=>{if(finishLayer.classList.contains("kit-hidden")){document.getElementById("kitFinishText").textContent=text||"";finishLayer.classList.remove("kit-hidden")}};
-   const closeFinish=()=>finishLayer.classList.add("kit-hidden");
+   const finish=(text)=>{finishLayer.textContent=text||"ゲーム終了";finishLayer.classList.remove("kit-hidden")};
+   const closeFinish=()=>{finishLayer.classList.add("kit-hidden");finishLayer.textContent=""};
    GameKit.finish=finish;
-   document.getElementById("kitAgain").onclick=()=>{closeFinish();if(o.onRestart)o.onRestart()};
-   document.getElementById("kitBack").onclick=()=>location.href="index.html";
    const infoEl=document.getElementById("info");
    if(infoEl){let ready=true;const observer=new MutationObserver(()=>{if(!ready)return;const t=(infoEl.textContent||"").trim();if(/ゲームオーバー|勝ち|負け|引き分け|クリア|クリア！|全ブロック破壊|フライング|記録を保存|タイムアウト|時間切れ|失敗|終了/.test(t))finish(t)});observer.observe(infoEl,{childList:true,subtree:true,characterData:true})}
    restart.onclick=()=>{closeHow();closeFinish();if(o.onRestart)o.onRestart()};
