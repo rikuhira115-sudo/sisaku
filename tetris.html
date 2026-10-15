@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#05070c">
+<title>テトリス - ゲーム王国</title>
+<style>
+:root{color-scheme:dark;--bg:#05070c;--panel:#111827;--line:#2a3952;--muted:#94a3b8;--blue:#2563eb}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 0,#142443 0,#05070c 48%,#020308 100%);color:#f8fafc;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;overflow-x:hidden;user-select:none;-webkit-tap-highlight-color:transparent}
+body{padding:8px 10px 26px}
+h1{font-size:1.6rem;margin:5px 0 1px;font-weight:950;letter-spacing:.03em}
+.sub{color:var(--muted);font-size:.78rem;margin-bottom:8px}
+.hud{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:6px auto 10px;max-width:440px}
+.stat{min-width:82px;background:#0d1421;border:1px solid var(--line);border-radius:12px;padding:7px 11px}
+.stat small{display:block;color:var(--muted);font-size:.68rem;font-weight:800}
+.stat strong{display:block;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.game-layout{display:flex;justify-content:center;align-items:flex-start;gap:9px;margin:0 auto;width:min(100%,410px)}
+.board-wrap{position:relative;width:min(68vw,280px);flex:0 1 280px;min-width:0}
+.board{width:100%;aspect-ratio:1/2;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(20,minmax(0,1fr));gap:2px;padding:5px;border:1px solid #33445f;border-radius:12px;background:#0b1120;box-shadow:0 12px 32px #0008;touch-action:none}
+.cell{min-width:0;min-height:0;border-radius:3px;background:#1a2434;border:1px solid #222f43}
+.cell.filled{background:var(--c);border-color:color-mix(in srgb,var(--c) 72%,white);box-shadow:inset 0 -3px 0 #0003,inset 0 2px 0 #ffffff38}
+.cell.ghost{background:color-mix(in srgb,var(--c) 22%,#101827);border:1px dashed var(--c);box-shadow:none}
+.side{width:92px;flex:0 0 92px;display:flex;flex-direction:column;gap:8px}
+.sidebox{border:1px solid var(--line);background:linear-gradient(145deg,#111827,#090d15);border-radius:13px;padding:8px 5px}
+.sidebox h2{font-size:.72rem;color:#b9c8df;margin:0 0 7px}
+.preview{display:grid;grid-template-columns:repeat(4,13px);grid-template-rows:repeat(4,13px);gap:2px;justify-content:center;min-height:58px;align-content:center}
+.preview-cell{width:13px;height:13px;border-radius:3px;background:transparent}
+.preview-cell.filled{background:var(--c);border:1px solid #ffffff35}
+.mini-stat{font-size:.72rem;color:var(--muted);line-height:1.6;overflow-wrap:anywhere}
+.mini-stat b{display:block;color:#f8fafc;font-size:1rem}
+.status{min-height:28px;color:#cbd5e1;font-size:.85rem;font-weight:850;margin:7px auto 2px}
+.status.good{color:#86efac}.status.warn{color:#fbbf24}
+.control-area{width:min(100%,410px);margin:9px auto 0}
+.controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.ctrl{min-height:47px;padding:7px 2px;border-radius:12px;border:1px solid #34445d;background:linear-gradient(180deg,#1b2940,#101725);color:#fff;font-size:1.18rem;font-weight:900;touch-action:manipulation;box-shadow:0 4px 0 #060a12;cursor:pointer}
+.ctrl span{display:block;font-size:.58rem;line-height:1.2;color:#a9bad3}
+.ctrl:active{transform:translateY(2px);box-shadow:0 2px 0 #060a12}
+.ctrl.primary{background:linear-gradient(180deg,#3478ff,#1d4ed8);border-color:#6998ff}
+.help{color:#71829c;font-size:.7rem;line-height:1.55;margin:11px auto 0;max-width:420px}
+@media(min-width:500px){.board-wrap{width:280px}.game-layout{gap:12px}.side{width:104px;flex-basis:104px}.preview{grid-template-columns:repeat(4,15px);grid-template-rows:repeat(4,15px)}.preview-cell{width:15px;height:15px}}
+@media(max-width:350px){body{padding-left:5px;padding-right:5px}.game-layout{gap:6px}.side{width:78px;flex-basis:78px}.sidebox{padding:7px 3px}.board{gap:1px;padding:4px}.ctrl{font-size:1rem;min-height:44px}}
+</style>
+</head>
+<body>
+<h1>🟪 テトリス</h1>
+<div class="sub">積んで、そろえて、一気に消そう。</div>
+<div class="hud">
+ <div class="stat"><small>スコア</small><strong id="score">0</strong></div>
+ <div class="stat"><small>消したライン</small><strong id="lines">0</strong></div>
+ <div class="stat"><small>レベル</small><strong id="level">1</strong></div>
+</div>
+<div class="game-layout">
+ <div class="board-wrap"><div id="board" class="board" role="img" aria-label="テトリスの盤面"></div></div>
+ <aside class="side">
+  <div class="sidebox"><h2>NEXT</h2><div id="next" class="preview"></div></div>
+  <div class="sidebox"><h2>BEST</h2><div class="mini-stat"><b id="best">0</b>ハイスコア</div></div>
+  <div class="sidebox"><h2>操作</h2><div class="mini-stat">← →<br>移動<br>↑ 回転<br>↓ 落下<br>Space<br>一気に落下<br>P 一時停止</div></div>
+ </aside>
+</div>
+<div id="status" class="status" role="status" aria-live="polite">ゲーム開始！</div>
+<div class="control-area">
+ <div class="controls">
+  <button class="ctrl" data-action="left" aria-label="左に移動">◀<span>左</span></button>
+  <button class="ctrl" data-action="rotate" aria-label="回転">↻<span>回転</span></button>
+  <button class="ctrl" data-action="right" aria-label="右に移動">▶<span>右</span></button>
+  <button class="ctrl" data-action="down" aria-label="一段落下">▼<span>下</span></button>
+  <button class="ctrl primary" data-action="drop" aria-label="一気に落下">⤓<span>落下</span></button>
+ </div>
+ <div style="display:flex;justify-content:center;gap:8px;margin-top:9px">
+  <button id="pause" class="ctrl" style="font-size:.85rem;min-height:38px;min-width:110px">⏸ 一時停止</button>
+  <button id="restart" class="ctrl" style="font-size:.85rem;min-height:38px;min-width:110px">↻ リスタート</button>
+ </div>
+</div>
+<div class="help">PC：矢印キーで移動・回転、Spaceで一気に落下、Pで一時停止。<br>スマホ：画面下のボタンで操作できます。</div>
+<script src="common.js"></script>
+<script>
+"use strict";
+const COLS=10,ROWS=20;
+const COLORS={I:"#38bdf8",O:"#facc15",T:"#c084fc",S:"#4ade80",Z:"#fb7185",J:"#60a5fa",L:"#fb923c"};
+const SHAPES={
+ I:[[1,1,1,1]],
+ O:[[1,1],[1,1]],
+ T:[[0,1,0],[1,1,1]],
+ S:[[0,1,1],[1,1,0]],
+ Z:[[1,1,0],[0,1,1]],
+ J:[[1,0,0],[1,1,1]],
+ L:[[0,0,1],[1,1,1]]
+};
+const boardEl=document.getElementById("board"),nextEl=document.getElementById("next");
+const scoreEl=document.getElementById("score"),linesEl=document.getElementById("lines"),levelEl=document.getElementById("level"),bestEl=document.getElementById("best"),statusEl=document.getElementById("status"),pauseBtn=document.getElementById("pause");
+let grid,bag,queue,piece,score,lines,level,over,paused,timer,lastTick=0,dropInterval=700;
+let best=Number(localStorage.getItem("gameKingdomTetrisBest")||0);
+bestEl.textContent=best.toLocaleString("ja-JP");
+function newBag(){const a=Object.keys(SHAPES);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function fillQueue(){while(queue.length<4){if(!bag.length)bag=newBag();queue.push(bag.pop())}}
+function rotateMatrix(m){return m[0].map((_,i)=>m.map(row=>row[i]).reverse())}
+function cellsFor(p){const out=[];p.matrix.forEach((row,y)=>row.forEach((v,x)=>{if(v)out.push([p.x+x,p.y+y])}));return out}
+function collides(p,dx=0,dy=0,matrix=p.matrix){for(let y=0;y<matrix.length;y++)for(let x=0;x<matrix[y].length;x++)if(matrix[y][x]){const nx=p.x+x+dx,ny=p.y+y+dy;if(nx<0||nx>=COLS||ny>=ROWS)return true;if(ny>=0&&grid[ny][nx])return true}return false}
+function spawn(){fillQueue();const type=queue.shift();fillQueue();const matrix=SHAPES[type].map(r=>r.slice());piece={type,matrix,x:Math.floor((COLS-matrix[0].length)/2),y:0};if(collides(piece)){endGame()}renderNext();render()}
+function move(dx,dy){if(over||paused||!piece)return false;if(!collides(piece,dx,dy)){piece.x+=dx;piece.y+=dy;render();return true}return false}
+function softDrop(){if(over||paused)return;if(move(0,1)){score+=1;updateHud()}else lockPiece()}
+function hardDrop(){if(over||paused||!piece)return;let n=0;while(!collides(piece,0,1)){piece.y++;n++}score+=n*2;lockPiece()}
+function rotate(){if(over||paused||!piece)return;const m=rotateMatrix(piece.matrix);for(const kick of [0,-1,1,-2,2]){if(!collides(piece,kick,0,m)){piece.matrix=m;piece.x+=kick;render();return}}}
+function lockPiece(){if(!piece||over)return;for(const [x,y] of cellsFor(piece)){if(y<0){endGame();return}grid[y][x]={type:piece.type,color:COLORS[piece.type]}}piece=null;clearLines();updateHud();if(!over)spawn()}
+function clearLines(){let n=0;for(let y=ROWS-1;y>=0;){if(grid[y].every(Boolean)){grid.splice(y,1);grid.unshift(Array(COLS).fill(null));n++}else y++}if(n){lines+=n;const base=[0,100,300,500,800][n]||800;score+=base*level;statusEl.textContent=["","✨ SINGLE!","🔥 DOUBLE!","💥 TRIPLE!","🌟 TETRIS!!"][n]||"ラインクリア！";statusEl.className="status good";level=Math.floor(lines/10)+1;dropInterval=Math.max(90,700-(level-1)*55)}else{statusEl.textContent="ブロックを積んでラインをそろえよう";statusEl.className="status"}}
+function updateHud(){scoreEl.textContent=score.toLocaleString("ja-JP");linesEl.textContent=lines;levelEl.textContent=level;if(score>best){best=score;localStorage.setItem("gameKingdomTetrisBest",String(best));bestEl.textContent=best.toLocaleString("ja-JP")}}
+function renderNext(){nextEl.innerHTML="";const type=queue[0];const mat=SHAPES[type];for(let y=0;y<4;y++)for(let x=0;x<4;x++){const c=document.createElement("div");c.className="preview-cell";if(mat[y]&&mat[y][x]){c.classList.add("filled");c.style.setProperty("--c",COLORS[type])}nextEl.appendChild(c)}}
+function render(){if(!grid)return;const view=grid.map(row=>row.map(v=>v?{...v}:null));if(piece&&!over){let ghost={...piece};while(!collides(ghost,0,1))ghost.y++;cellsFor(ghost).forEach(([x,y])=>{if(y>=0&&y<ROWS&&view[y][x]===null)view[y][x]={type:piece.type,color:COLORS[piece.type],ghost:true}});cellsFor(piece).forEach(([x,y])=>{if(y>=0&&y<ROWS)view[y][x]={type:piece.type,color:COLORS[piece.type]}})}boardEl.innerHTML="";for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const c=document.createElement("div"),v=view[y][x];c.className="cell";if(v){c.classList.add(v.ghost?"ghost":"filled");c.style.setProperty("--c",v.color)}boardEl.appendChild(c)}if(paused){statusEl.textContent="⏸ 一時停止中";statusEl.className="status warn"}}
+function endGame(){over=true;paused=false;clearInterval(timer);timer=null;pauseBtn.textContent="▶ 再開";statusEl.textContent="ゲームオーバー！ スコア "+score.toLocaleString("ja-JP");statusEl.className="status warn";render();if(window.GameKit&&GameKit.finish)GameKit.finish("ゲームオーバー！ スコア "+score.toLocaleString("ja-JP")+" / ベスト "+best.toLocaleString("ja-JP"))}
+function tick(){if(over||paused)return;if(!move(0,1))lockPiece()}
+function runTimer(){if(timer)clearInterval(timer);timer=setInterval(tick,dropInterval)}
+function togglePause(){if(over)return;paused=!paused;pauseBtn.textContent=paused?"▶ 再開":"⏸ 一時停止";if(paused){statusEl.textContent="⏸ 一時停止中";statusEl.className="status warn"}else{statusEl.textContent="再開！";statusEl.className="status";render()} }
+function reset(){if(timer)clearInterval(timer);grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));bag=[];queue=[];piece=null;score=0;lines=0;level=1;over=false;paused=false;dropInterval=700;pauseBtn.textContent="⏸ 一時停止";statusEl.textContent="ゲーム開始！";statusEl.className="status";fillQueue();updateHud();spawn();runTimer()}
+document.querySelectorAll("[data-action]").forEach(btn=>{const act=btn.dataset.action;const fire=()=>{if(act==="left")move(-1,0);else if(act==="right")move(1,0);else if(act==="rotate")rotate();else if(act==="down")softDrop();else if(act==="drop")hardDrop()};btn.addEventListener("click",fire);if(["left","right","down"].includes(act)){let repeat=null;btn.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse")return;e.preventDefault();fire();repeat=setInterval(fire,act==="down"?85:115)});const stop=()=>{if(repeat)clearInterval(repeat);repeat=null};btn.addEventListener("pointerup",stop);btn.addEventListener("pointercancel",stop);btn.addEventListener("pointerleave",stop)}});
+pauseBtn.addEventListener("click",togglePause);document.getElementById("restart").addEventListener("click",reset);
+document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key))e.preventDefault();if(e.key==="ArrowLeft")move(-1,0);else if(e.key==="ArrowRight")move(1,0);else if(e.key==="ArrowDown")softDrop();else if(e.key==="ArrowUp"||e.key==="x"||e.key==="X")rotate();else if(e.key===" ")hardDrop();else if(e.key==="p"||e.key==="P")togglePause();else if(e.key==="r"||e.key==="R")reset()});
+if(window.GameKit)GameKit.mount({title:"🟪 テトリス",howto:"左右ボタンまたは矢印キーで移動、回転ボタンまたは↑キーで回転、下ボタンまたは↓キーで少しずつ落下、落下ボタンまたはSpaceで一気に落下します。横一列がそろうと消えて得点になります。10ライン消すごとにレベルが上がり、落下速度も速くなります。Pキーまたは一時停止ボタンで止められます。",onRestart:reset});
+reset();
+</script>
+</body>
+</html>
