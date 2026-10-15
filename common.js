@@ -7,7 +7,7 @@
  .kit-modal{position:fixed;inset:0;background:rgba(2,5,12,.86);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px;z-index:10000}
  .kit-panel{width:min(92vw,460px);background:#111827;border:1px solid #33415c;border-radius:22px;padding:24px;box-shadow:0 20px 60px #0009}
  .kit-panel h2{margin:0 0 10px}.kit-panel p{line-height:1.75;color:#cbd5e1;text-align:left}
- .kit-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.kit-hidden{display:none!important}
+ .kit-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}\n .kit-result{width:min(94vw,460px);margin:12px auto 20px;padding:14px 16px;background:linear-gradient(145deg,#17243a,#0c1320);border:1px solid #6681aa;border-radius:16px;box-shadow:0 10px 28px #0008;text-align:center}\n .kit-result h2{margin:2px 0 6px;font-size:1.35rem}.kit-result p{margin:4px 0 12px;color:#e2e8f0;font-weight:800}.kit-result .kit-row{gap:8px}\n .kit-hidden{display:none!important}
  `;
  const style=document.createElement("style");style.textContent=css;document.head.appendChild(style);
  window.GameKit={
@@ -21,8 +21,8 @@
    const modal=document.createElement("div");modal.className="kit-modal kit-hidden";
    modal.innerHTML='<div class="kit-panel"><h2>📖 遊び方</h2><p>'+(o.howto||"画面の指示に従って遊んでください。")+'</p><div class="kit-row"><button class="kit-btn primary" id="kitClose">閉じる</button></div></div>';
    document.body.appendChild(modal);
-   const finishLayer=document.createElement("div");finishLayer.className="kit-modal kit-hidden";finishLayer.id="kitFinish";
-   finishLayer.innerHTML='<div class="kit-panel" style="text-align:center"><div style="font-size:2.8rem">🏁</div><h2 id="kitFinishTitle">ゲーム終了</h2><p id="kitFinishText" style="text-align:center"></p><div class="kit-row"><button class="kit-btn primary" id="kitAgain">もう一回</button><button class="kit-btn" id="kitBack">ゲーム王国へ戻る</button></div></div>';
+   const finishLayer=document.createElement("section");finishLayer.className="kit-result kit-hidden";finishLayer.id="kitFinish";
+   finishLayer.innerHTML='<div style="font-size:1.6rem" aria-hidden="true">🏁</div><h2 id="kitFinishTitle">ゲーム終了</h2><p id="kitFinishText"></p><div class="kit-row"><button class="kit-btn primary" id="kitAgain">もう一回</button><button class="kit-btn" id="kitBack">ゲーム王国へ戻る</button></div>';
    document.body.appendChild(finishLayer);
    const closeHow=()=>modal.classList.add("kit-hidden"),openHow=()=>modal.classList.remove("kit-hidden");
    const finish=(text)=>{if(finishLayer.classList.contains("kit-hidden")){document.getElementById("kitFinishText").textContent=text||"";finishLayer.classList.remove("kit-hidden")}};
