@@ -8,7 +8,7 @@ const other=o=>o==="s"?"g":"s",inside=(x,y)=>x>=0&&x<S&&y>=0&&y<S;
 function make(type,owner,promoted=false){return{type,owner,promoted}}
 function emptyState(){return Array.from({length:S},()=>Array(S).fill(null))}
 function newHands(){return{s:Object.fromEntries(handTypes.map(t=>[t,0])),g:Object.fromEntries(handTypes.map(t=>[t,0]))}}
-function reset(){board=emptyState();hand=newHands();turn="s";selected=null;gameOver=false;pending=null;last=null;for(let x=0;x<S;x++){board[0][x]=make(back[x],"g");board[8][x]=make(back[x],"s")}board[1][1]=make("B","g");board[1][7]=make("R","g");board[7][1]=make("B","s");board[7][7]=make("R","s");for(let x=0;x<S;x++){board[2][x]=make("P","g");board[6][x]=make("P","s")}render();updateStatus()}
+function reset(){board=emptyState();hand=newHands();turn="s";selected=null;gameOver=false;pending=null;last=null;for(let x=0;x<S;x++){board[0][x]=make(back[x],"g");board[8][x]=make(back[x],"s")}board[1][1]=make("R","g");board[1][7]=make("B","g");board[7][1]=make("B","s");board[7][7]=make("R","s");for(let x=0;x<S;x++){board[2][x]=make("P","g");board[6][x]=make("P","s")}render();updateStatus()}
 function cloneState(st){return{board:st.board.map(row=>row.map(p=>p?{...p}:null)),hand:{s:{...st.hand.s},g:{...st.hand.g}}}}
 function zone(owner,y){return owner==="s"?y<=2:y>=6}
 function base(p){return p.type}
