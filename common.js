@@ -7,7 +7,7 @@
  .kit-modal{position:fixed;inset:0;background:rgba(2,5,12,.86);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px;z-index:10000}
  .kit-panel{width:min(92vw,460px);background:#111827;border:1px solid #33415c;border-radius:22px;padding:24px;box-shadow:0 20px 60px #0009}
  .kit-panel h2{margin:0 0 10px}.kit-panel p{line-height:1.75;color:#cbd5e1;text-align:left}
- .kit-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}\n .kit-result{width:min(94vw,460px);margin:12px auto 20px;padding:14px 16px;background:linear-gradient(145deg,#17243a,#0c1320);border:1px solid #6681aa;border-radius:16px;box-shadow:0 10px 28px #0008;text-align:center}\n .kit-result h2{margin:2px 0 6px;font-size:1.35rem}.kit-result p{margin:4px 0 12px;color:#e2e8f0;font-weight:800}.kit-result .kit-row{gap:8px}\n .kit-hidden{display:none!important}
+ .kit-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}\n .kit-result{position:fixed;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:10000;width:min(94vw,460px);margin:0;padding:10px 12px;background:linear-gradient(145deg,#17243af2,#0c1320f2);border:1px solid #8aa8d8;border-radius:16px;box-shadow:0 8px 26px #0009;text-align:center;backdrop-filter:blur(8px)}\n .kit-result h2{margin:0 0 3px;font-size:1.2rem}.kit-result p{margin:2px 0 8px;color:#e2e8f0;font-weight:900}.kit-result .kit-row{gap:8px}.kit-result .kit-btn{padding:8px 10px}\n .kit-hidden{display:none!important}
  `;
  const style=document.createElement("style");style.textContent=css;document.head.appendChild(style);
  window.GameKit={
