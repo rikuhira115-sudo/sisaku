@@ -250,12 +250,12 @@ function spawnClearParticles(count){
   setTimeout(()=>p.remove(),650);
  }
 }
-function showDropTrail(distance){
+function showDropTrail(x,y,distance){
  if(distance<5)return;
  const p=document.createElement("i");
  p.className="drop-trail";
- p.style.setProperty("--x",((piece.x+0.5)/COLS*100)+"%");
- p.style.setProperty("--y",Math.max(0,piece.y*100/ROWS)+"%");
+ p.style.setProperty("--x",((x+0.5)/COLS*100)+"%");
+ p.style.setProperty("--y",Math.max(0,y*100/ROWS)+"%");
  p.style.setProperty("--h",Math.min(70,distance*100/ROWS)+"%");
  boardEl.appendChild(p);
  setTimeout(()=>p.remove(),220);
@@ -276,13 +276,13 @@ function finishLineClear(rows){
  boardEl.classList.remove("impact");
  void boardEl.offsetWidth;
  boardEl.classList.add("impact");
- spawnClearParticles(count);
  combo++;
  const names={1:"✨ SINGLE!",2:"🔥 DOUBLE!",3:"💥 TRIPLE!",4:"🌟 TETRIS!!"};
  const comboText=combo>1?"  COMBO ×"+combo:"";
  setStatus((names[count]||"LINE CLEAR!")+comboText,"good");
  spawnPiece();
  render();
+ spawnClearParticles(count);
 }
 function lockPiece(){
  if(!piece||gameOver||clearing)return;
@@ -322,12 +322,12 @@ function softDrop(){
 }
 function hardDrop(){
  if(!started||gameOver||paused||clearing||!piece)return;
- const startY=piece.y;
+ const startX=piece.x,startY=piece.y;
  let distance=0;
  while(!collides(piece,0,1)&&distance<ROWS){piece.y++;distance++}
- showDropTrail(distance);
  score+=distance*2;
  lockPiece();
+ showDropTrail(startX,startY,distance);
 }
 function rotate(){
  if(!started||gameOver||paused||clearing||!piece)return;
