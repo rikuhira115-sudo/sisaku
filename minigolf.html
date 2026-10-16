@@ -104,7 +104,7 @@ for(let w of c.water){if(insideRect(p,w)){waterReset(p);return}}
 for(let s of c.sand){if(insideRect(p,s)){p.vx*=.965;p.vy*=.965}}
 if(Math.hypot(p.x-c.hole[0],p.y-c.hole[1])<22&&Math.hypot(p.vx,p.vy)<3.4){p.x=c.hole[0];p.y=c.hole[1];p.vx=p.vy=0;p.done=true;p.holes[hole]=p.strokes;phase='aim';floaters.push({x:c.hole[0],y:c.hole[1]-34,text:p.strokes===1?'ACE!':p.strokes<=c.par-1?'BIRDIE!':p.strokes===c.par?'PAR':'+'+(p.strokes-c.par),life:1.1,max:1.1,color:p.color});burst(p.x,p.y,p.color,26);tone(640,.15,'triangle',.05);tone(900,.2,'sine',.04);vibrate([20,25,55]);nextTurn();return}
 }
-if(Math.hypot(p.vx,p.vy)<.18){p.vx=p.vy=0;phase='aim';if(p.strokes>=8&&!p.done){p.done=true;p.holes[hole]=p.strokes;floaters.push({x:p.x,y:p.y-25,text:'MAX STROKES',life:1,max:1,color:'#ffda83'});setStatus('上限8打！P'+(active+1)+' はこのホール終了');nextTurn()}else{setStatus('P'+(active+1)+' のボール停止。次のショット！');if(p.strokes>0&&players[1-active].done)active=active;hud()}}
+if(Math.hypot(p.vx,p.vy)<.18){p.vx=p.vy=0;if(p.strokes>=8&&!p.done){p.done=true;p.holes[hole]=p.strokes;floaters.push({x:p.x,y:p.y-25,text:'MAX STROKES',life:1,max:1,color:'#ffda83'});setStatus('上限8打！P'+(active+1)+' はこのホール終了');nextTurn()}else{setStatus('P'+(active+1)+' のボール停止。交代！');nextTurn()}}
 }
 particles.forEach(p=>{p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.vx*=.96;p.vy*=.96;p.life-=dt});particles=particles.filter(p=>p.life>0);floaters.forEach(p=>{p.y-=35*dt;p.life-=dt});floaters=floaters.filter(p=>p.life>0)}
 function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
