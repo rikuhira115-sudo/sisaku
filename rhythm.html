@@ -38,8 +38,8 @@ h1{font-size:clamp(1.65rem,7vw,2.45rem);font-weight:1000;letter-spacing:.035em;m
 .songGenre{font-size:.65rem;color:#b0c2df;margin-top:4px}
 .songMeta{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:9px;color:#8da5c8;font-size:.64rem;font-weight:850}
 .bpm{padding:4px 6px;border-radius:6px;background:#ffffff0d;color:#d3e6ff}
-.previewBtn{position:absolute;right:7px;top:7px;border:1px solid #ffffff70;background:#050b18c9;color:#fff;border-radius:8px;padding:5px 7px;font-size:.65rem;font-weight:900;z-index:2}
-.previewBtn:active{background:#2563eb}
+
+
 .difficultyWrap{padding:12px;margin-top:10px}
 .diffButtons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .diff{border:1px solid #344665;background:#0b1425;color:#aabbd7;border-radius:12px;padding:10px 4px;font-weight:950;font-size:.8rem}
@@ -125,10 +125,10 @@ h1{font-size:clamp(1.65rem,7vw,2.45rem);font-weight:1000;letter-spacing:.035em;m
  </div>
  <button id="startBtn" class="startBtn">▶　この曲でプレイ</button>
  <div class="selectAudio">
-  <button id="menuMusicBtn" class="softBtn">🎵 BGM ON</button>
+  
   <button id="menuSfxBtn" class="softBtn">🔊 タップ音 ON</button>
  </div>
- <p class="tinyHelp">すべてオリジナルのシンセサウンド。アプリ内で曲を生成するため、追加ダウンロード不要です。曲選択の「▶ 試聴」で冒頭を聴けます。</p>
+ <p class="tinyHelp">音ズレ対策としてBGMは使わず、ノーツのタイミングに集中できるモードです。タップ音はON/OFFできます。</p>
 </main>
 
 <main id="playScreen" class="screen hidden">
@@ -344,28 +344,16 @@ function startScheduler(events,startTime,song,isPreview){
  if(isPreview)previewTimer=setTimeout(stopMusic,Math.max(1500,8*schedSpb*1000+300));
 }
 function updateMusicButtons(){
- $("menuMusicBtn").textContent=(musicOn?"🎵 BGM ON":"🔇 BGM OFF");
  $("playSfxBtn").textContent=(sfxOn?"🔊 タップ音 ON":"🔇 タップ音 OFF");
  $("menuSfxBtn").textContent=(sfxOn?"🔊 タップ音 ON":"🔇 タップ音 OFF");
- $("menuMusicBtn").classList.toggle("active",musicOn);$("menuSfxBtn").classList.toggle("active",sfxOn);
- if(audioCtx&&musicGain){const now=audioCtx.currentTime;musicGain.gain.cancelScheduledValues(now);musicGain.gain.setTargetAtTime(musicOn?(previewing?.28:.32):0,now,.025);}
+ $("menuSfxBtn").classList.toggle("active",sfxOn);
  if(audioCtx&&sfxGain){const now=audioCtx.currentTime;sfxGain.gain.cancelScheduledValues(now);sfxGain.gain.setTargetAtTime(sfxOn?.6:0,now,.025);}
-}
-async function previewSong(song){
- try{
-  await ensureAudio();stopMusic();previewing=true;
-  const now=audioCtx.currentTime,start=now+.12;
-  musicGain.gain.cancelScheduledValues(now);musicGain.gain.setValueAtTime(musicOn?.29:0,now);
-  const evs=buildAudioEvents(song,"normal",true);
-  startScheduler(evs,start,song,true);
-  $("announce").textContent=""; 
- }catch(e){console.warn(e);}
 }
 function renderSongs(){
  songGrid.innerHTML="";
  songs.forEach(song=>{
   const card=document.createElement("article");card.className="songCard"+(selectedSong.id===song.id?" selected":"");card.dataset.song=song.id;
-  card.innerHTML='<button class="previewBtn" type="button" aria-label="'+song.title+'を試聴">▶ 試聴</button><div class="cover" style="--cover:'+song.cover+'"><span class="coverTag">'+song.tag+'</span><span class="coverIcon">'+song.icon+'</span></div><div class="songBody"><div class="songTitle">'+song.title+'</div><div class="songGenre">'+song.genre+'</div><div class="songMeta"><span>'+song.jp+'</span><span class="bpm">'+song.bpm+' BPM</span></div></div>';
+  card.innerHTML='<div class="cover" style="--cover:'+song.cover+'"><span class="coverTag">'+song.tag+'</span><span class="coverIcon">'+song.icon+'</span></div><div class="songBody"><div class="songTitle">'+song.title+'</div><div class="songGenre">'+song.genre+'</div><div class="songMeta"><span>'+song.jp+'</span><span class="bpm">'+song.bpm+' BPM</span></div></div>';
   card.addEventListener("click",()=>{selectedSong=song;renderSongs();updateSelectionText();});
   songGrid.appendChild(card);
  });
@@ -398,10 +386,7 @@ async function startGame(){
  $("playSongLabel").textContent=selectedSong.title+" · "+selectedDiff.toUpperCase();
  $("announce").textContent="READY…";$("progressBar").style.width="0%";
  updateHud();updateMusicButtons();
- const events=buildAudioEvents(selectedSong,selectedDiff,false);
- const now=audioCtx.currentTime;
- musicGain.gain.cancelScheduledValues(now);musicGain.gain.setValueAtTime(0,now);musicGain.gain.setValueAtTime(musicOn?.32:0,startAt-.025);
- startScheduler(events,startAt,selectedSong,false);
+ // BGMと自動試聴を停止。視覚ノーツとタップ音だけでプレイします。
 }
 function elapsedSong(){return audioCtx&&startAt?audioCtx.currentTime-startAt:elapsed;}
 function laneTapSound(lane){
@@ -555,7 +540,6 @@ function onLaneButtonPress(lane,button){
 $("songGrid").addEventListener("click",()=>{});
 document.querySelectorAll(".diff").forEach(btn=>btn.addEventListener("click",()=>{selectedDiff=btn.dataset.diff;updateSelectionText();}));
 $("startBtn").addEventListener("click",startGame);
-$("menuMusicBtn").addEventListener("click",async()=>{musicOn=!musicOn;try{if(audioCtx&&audioCtx.state==="suspended")await audioCtx.resume();}catch(e){}updateMusicButtons();if(!musicOn&&previewing)stopMusic();});
 function toggleSfx(){sfxOn=!sfxOn;updateMusicButtons();if(sfxOn&&audioCtx)tone(620,audioCtx.currentTime,.075,"sine",.055,"sfx");}
 $("menuSfxBtn").addEventListener("click",toggleSfx);$("playSfxBtn").addEventListener("click",toggleSfx);
 $("pauseBtn").addEventListener("click",togglePause);$("resumeBtn").addEventListener("click",togglePause);
@@ -582,7 +566,7 @@ window.addEventListener("keydown",e=>{
 window.addEventListener("blur",()=>{if(state==="playing")togglePause();});
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing")togglePause();});
 function mountHelp(){
- if(window.GameKit)window.GameKit.mount({title:"🎵 リズムキングダム",intro:"オリジナルのシンセ曲を選んで、4レーンのノーツをタップするリズムゲームです。",howto:"曲選択画面で4曲から好きな曲を選び、EASY / NORMAL / HARDから難易度を決定してスタートします。ノーツが下の判定ラインに重なる瞬間に、同じ色のレーンをタップしてください。判定はPERFECT（±45ms）、GREAT（±90ms）、GOOD（±145ms）、それ以外はMISSです。コンボをつなぐとスコア倍率が上がります。スマホは画面の4レーンか下のボタン、PCはD・F・J・Kまたは矢印キーで操作できます。ポーズ中は曲も譜面も止まります。",onStart:showSelect,onRestart:()=>{if(state==="playing"||state==="paused"||state==="result")startGame();else showSelect();}});
+ if(window.GameKit)window.GameKit.mount({title:"🎵 リズムキングダム",intro:"オリジナルのシンセ曲を選んで、4レーンのノーツをタップするリズムゲームです。",howto:"曲選択画面で4曲から好きな曲を選び、EASY / NORMAL / HARDから難易度を決定してスタートします。音ズレ対策としてBGMはなく、ノーツのタイミングに集中する形式です。ノーツが下の判定ラインに重なる瞬間に、同じ色のレーンをタップしてください。判定はPERFECT（±45ms）、GREAT（±90ms）、GOOD（±145ms）、それ以外はMISSです。コンボをつなぐとスコア倍率が上がります。スマホは画面の4レーンか下のボタン、PCはD・F・J・Kまたは矢印キーで操作できます。タップ音はON/OFF可能です。",onStart:showSelect,onRestart:()=>{if(state==="playing"||state==="paused"||state==="result")startGame();else showSelect();}});
 }
 renderSongs();updateSelectionText();updateMusicButtons();showScreen("select");mountHelp();
 raf=requestAnimationFrame(frame);
