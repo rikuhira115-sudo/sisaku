@@ -128,7 +128,7 @@ h1{font-size:clamp(1.65rem,7vw,2.45rem);font-weight:1000;letter-spacing:.035em;m
   
   <button id="menuSfxBtn" class="softBtn">🔊 タップ音 ON</button>
  </div>
- <p class="tinyHelp">音ズレ対策としてBGMは使わず、ノーツのタイミングに集中できるモードです。タップ音はON/OFFできます。</p>
+ <p class="tinyHelp">タップするたびに弾けるアーケード風の音と、PERFECT時のきらめくコンボ音を楽しもう！BGMなしなので音ズレの心配を減らせます。</p>
 </main>
 
 <main id="playScreen" class="screen hidden">
@@ -195,10 +195,10 @@ h1{font-size:clamp(1.65rem,7vw,2.45rem);font-weight:1000;letter-spacing:.035em;m
 const W=420,H=560,JUDGE_Y=472,APPROACH=1.58,TOP_Y=42,LANE_W=W/4;
 const LANES=["#38bdf8","#a78bfa","#fb7185","#fbbf24"];
 const songs=[
- {id:"neon",title:"NEON DRIVE",jp:"ネオン・ドライブ",genre:"CYBER POP / 124 BPM",bpm:124,icon:"🌃",cover:"linear-gradient(145deg,#312e81,#0e7490 58%,#0b1024)",tag:"ELECTRO",wave:"sawtooth",tones:[261.63,329.63,392.00,493.88],bass:[65.41,73.42,87.31,98.00],pattern:[0,-1,1,3,2,-1,1,2],style:0},
- {id:"sakura",title:"SAKURA CIRCUIT",jp:"サクラ・サーキット",genre:"CHILL / 100 BPM",bpm:100,icon:"🌸",cover:"linear-gradient(145deg,#9d174d,#7c3aed 58%,#172554)",tag:"CHILL BEATS",wave:"triangle",tones:[293.66,349.23,440.00,523.25],bass:[73.42,87.31,98.00,110.00],pattern:[0,-1,2,-1,1,3,-1,2],style:1},
- {id:"starforge",title:"STARFORGE",jp:"星砕きの行進",genre:"SYNTH ROCK / 148 BPM",bpm:148,icon:"🚀",cover:"linear-gradient(145deg,#991b1b,#7c2d12 48%,#111827)",tag:"HIGH ENERGY",wave:"square",tones:[196.00,246.94,293.66,392.00],bass:[49.00,55.00,65.41,73.42],pattern:[0,2,1,3,2,0,1,3],style:2},
- {id:"pixelsoda",title:"PIXEL SODA",jp:"ピクセル・ソーダ",genre:"CHIPTUNE / 132 BPM",bpm:132,icon:"🫧",cover:"linear-gradient(145deg,#0369a1,#0f766e 52%,#4c1d95)",tag:"CHIPTUNE",wave:"square",tones:[261.63,311.13,392.00,466.16],bass:[65.41,77.78,98.00,116.54],pattern:[0,1,-1,2,3,2,1,-1],style:3}
+ {id:"starlight",title:"STARDASH FES",jp:"スターダッシュ・フェス",genre:"FUTURE POP / 150 BPM",bpm:150,icon:"🌠",cover:"linear-gradient(145deg,#4338ca,#db2777 58%,#f59e0b)",tag:"FESTIVAL ANTHEM",wave:"sawtooth",tones:[392.00,493.88,587.33,783.99],bass:[65.41,73.42,87.31,98.00],pattern:[0,2,1,3,2,1,3,0],style:0},
+ {id:"rocket",title:"ROCKET PARADE",jp:"ロケット・パレード",genre:"ARCADE ROCK / 164 BPM",bpm:164,icon:"🚀",cover:"linear-gradient(145deg,#b91c1c,#ea580c 55%,#facc15)",tag:"MAX ENERGY",wave:"square",tones:[329.63,392.00,493.88,659.25],bass:[55.00,65.41,73.42,82.41],pattern:[0,1,3,2,0,2,1,3],style:2},
+ {id:"rainbow",title:"RAINBOW RUSH",jp:"レインボー・ラッシュ",genre:"HAPPY DANCE / 140 BPM",bpm:140,icon:"🌈",cover:"linear-gradient(145deg,#0891b2,#7c3aed 52%,#ec4899)",tag:"HAPPY BOOST",wave:"triangle",tones:[261.63,349.23,440.00,587.33],bass:[65.41,82.41,98.00,110.00],pattern:[0,2,3,1,2,0,3,1],style:3},
+ {id:"pixel",title:"PIXEL FIREWORKS",jp:"ピクセル花火大会",genre:"CHIPTUNE / 156 BPM",bpm:156,icon:"🎆",cover:"linear-gradient(145deg,#0f766e,#2563eb 50%,#9333ea)",tag:"8-BIT PARTY",wave:"square",tones:[293.66,392.00,440.00,587.33],bass:[73.42,87.31,110.00,130.81],pattern:[0,1,3,2,1,3,0,2],style:3}
 ];
 const $=id=>document.getElementById(id);
 const selectScreen=$("selectScreen"),playScreen=$("playScreen"),resultScreen=$("resultScreen"),songGrid=$("songGrid");
@@ -208,7 +208,7 @@ let audioCtx=null,musicGain=null,sfxGain=null,noiseBuffer=null;
 let schedulerId=null,previewTimer=null,schedEvents=[],schedIndex=0,schedStart=0,schedSpb=0,schedSong=null;
 let startAt=0,elapsed=0,songDuration=0,lastFrame=0,raf=0,notes=[],fullMap=[],particles=[],floatTexts=[];
 let score=0,combo=0,maxCombo=0,counts={perfect:0,great:0,good:0,miss:0},weightedAccuracy=0,totalPossible=0;
-let musicOn=true,sfxOn=true,previewing=false,pausedFrom="playing",resultBest=false,wallStart=0,lastJudgement="",lastJudgementAt=0,backgroundStars=[];
+let musicOn=false,sfxOn=true,previewing=false,pausedFrom="playing",resultBest=false,wallStart=0,lastJudgement="",lastJudgementAt=0,backgroundStars=[];
 let trackEvents=[];
 for(let i=0;i<65;i++)backgroundStars.push({x:Math.random()*W,y:Math.random()*H,r:.4+Math.random()*1.35,phase:Math.random()*6.28,speed:.3+Math.random()*1.5});
 
@@ -279,7 +279,7 @@ async function ensureAudio(){
   if(!Ctx){alert("このブラウザでは音声機能を利用できません。SafariかChromeの最新版で開いてください。");throw new Error("Web Audio unavailable");}
   audioCtx=new Ctx();
   musicGain=audioCtx.createGain();sfxGain=audioCtx.createGain();
-  musicGain.gain.value=musicOn?.32:0;sfxGain.gain.value=sfxOn?.6:0;
+  musicGain.gain.value=0;sfxGain.gain.value=sfxOn?.78:0;
   musicGain.connect(audioCtx.destination);sfxGain.connect(audioCtx.destination);
   noiseBuffer=audioCtx.createBuffer(1,audioCtx.sampleRate*2,audioCtx.sampleRate);
   const data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
@@ -347,7 +347,7 @@ function updateMusicButtons(){
  $("playSfxBtn").textContent=(sfxOn?"🔊 タップ音 ON":"🔇 タップ音 OFF");
  $("menuSfxBtn").textContent=(sfxOn?"🔊 タップ音 ON":"🔇 タップ音 OFF");
  $("menuSfxBtn").classList.toggle("active",sfxOn);
- if(audioCtx&&sfxGain){const now=audioCtx.currentTime;sfxGain.gain.cancelScheduledValues(now);sfxGain.gain.setTargetAtTime(sfxOn?.6:0,now,.025);}
+ if(audioCtx&&sfxGain){const now=audioCtx.currentTime;sfxGain.gain.cancelScheduledValues(now);sfxGain.gain.setTargetAtTime(sfxOn?.78:0,now,.025);}
 }
 function renderSongs(){
  songGrid.innerHTML="";
@@ -391,12 +391,29 @@ async function startGame(){
 function elapsedSong(){return audioCtx&&startAt?audioCtx.currentTime-startAt:elapsed;}
 function laneTapSound(lane){
  if(!audioCtx||!sfxOn)return;
- tone(400+lane*75,audioCtx.currentTime,.055,"triangle",.055,"sfx");
+ const now=audioCtx.currentTime,root=[523.25,659.25,783.99,1046.5][lane];
+ tone(root,now,.075,"square",.052,"sfx",root*1.015);
+ tone(root*1.5,now+.012,.095,"triangle",.025,"sfx",root*1.25);
+ const click=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),amp=audioCtx.createGain();
+ click.buffer=noiseBuffer;filter.type="highpass";filter.frequency.value=5200;
+ amp.gain.setValueAtTime(.0001,now);amp.gain.linearRampToValueAtTime(.018,now+.002);amp.gain.exponentialRampToValueAtTime(.0001,now+.025);
+ click.connect(filter);filter.connect(amp);amp.connect(sfxGain);click.start(now,0,.03);
 }
 function judgeSound(kind,lane){
  if(!audioCtx||!sfxOn)return;
- const f=kind==="perfect"?880:kind==="great"?660:kind==="good"?510:230;
- tone(f+lane*14,audioCtx.currentTime,.09,kind==="miss"?"sawtooth":"sine",kind==="miss"?.035:.065,"sfx");
+ const now=audioCtx.currentTime;
+ if(kind==="perfect"){
+  const f=[1046.5,1318.51,1567.98,2093][lane];
+  tone(f,now,.12,"sine",.075,"sfx",f*1.025);
+  tone(f*1.5,now+.018,.16,"triangle",.032,"sfx",f*1.25);
+ }else if(kind==="great"){
+  const f=[783.99,987.77,1174.66,1567.98][lane];
+  tone(f,now,.11,"triangle",.065,"sfx",f*1.04);
+ }else if(kind==="good"){
+  tone([587.33,659.25,783.99,880][lane],now,.085,"sine",.052,"sfx");
+ }else{
+  tone(180,now,.12,"sawtooth",.032,"sfx",105);
+ }
 }
 function addFloat(lane,text,kind){
  floatTexts.push({lane:lane,text:text,kind:kind,life:.75,max:.75});
@@ -540,7 +557,7 @@ function onLaneButtonPress(lane,button){
 $("songGrid").addEventListener("click",()=>{});
 document.querySelectorAll(".diff").forEach(btn=>btn.addEventListener("click",()=>{selectedDiff=btn.dataset.diff;updateSelectionText();}));
 $("startBtn").addEventListener("click",startGame);
-function toggleSfx(){sfxOn=!sfxOn;updateMusicButtons();if(sfxOn&&audioCtx)tone(620,audioCtx.currentTime,.075,"sine",.055,"sfx");}
+function toggleSfx(){sfxOn=!sfxOn;updateMusicButtons();if(sfxOn&&audioCtx){tone(784,audioCtx.currentTime,.09,"square",.055,"sfx");tone(1174.66,audioCtx.currentTime+.06,.13,"triangle",.04,"sfx");}}
 $("menuSfxBtn").addEventListener("click",toggleSfx);$("playSfxBtn").addEventListener("click",toggleSfx);
 $("pauseBtn").addEventListener("click",togglePause);$("resumeBtn").addEventListener("click",togglePause);
 $("quitBtn").addEventListener("click",showSelect);$("backToSongsBtn").addEventListener("click",showSelect);
@@ -566,7 +583,7 @@ window.addEventListener("keydown",e=>{
 window.addEventListener("blur",()=>{if(state==="playing")togglePause();});
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing")togglePause();});
 function mountHelp(){
- if(window.GameKit)window.GameKit.mount({title:"🎵 リズムキングダム",intro:"オリジナルのシンセ曲を選んで、4レーンのノーツをタップするリズムゲームです。",howto:"曲選択画面で4曲から好きな曲を選び、EASY / NORMAL / HARDから難易度を決定してスタートします。音ズレ対策としてBGMはなく、ノーツのタイミングに集中する形式です。ノーツが下の判定ラインに重なる瞬間に、同じ色のレーンをタップしてください。判定はPERFECT（±45ms）、GREAT（±90ms）、GOOD（±145ms）、それ以外はMISSです。コンボをつなぐとスコア倍率が上がります。スマホは画面の4レーンか下のボタン、PCはD・F・J・Kまたは矢印キーで操作できます。タップ音はON/OFF可能です。",onStart:showSelect,onRestart:()=>{if(state==="playing"||state==="paused"||state==="result")startGame();else showSelect();}});
+ if(window.GameKit)window.GameKit.mount({title:"🎵 リズムキングダム",intro:"ワクワクするオリジナル電子音を選んで、4レーンのノーツをタップするリズムゲームです。",howto:"曲選択画面で4曲から好きな曲を選び、EASY / NORMAL / HARDから難易度を決定してスタートします。BGMなしでも楽しい、きらきらしたタップ音と判定音でコンボをつなぐ形式です。ノーツが下の判定ラインに重なる瞬間に、同じ色のレーンをタップしてください。判定はPERFECT（±45ms）、GREAT（±90ms）、GOOD（±145ms）、それ以外はMISSです。コンボをつなぐとスコア倍率が上がります。スマホは画面の4レーンか下のボタン、PCはD・F・J・Kまたは矢印キーで操作できます。タップ音はON/OFF可能です。",onStart:showSelect,onRestart:()=>{if(state==="playing"||state==="paused"||state==="result")startGame();else showSelect();}});
 }
 renderSongs();updateSelectionText();updateMusicButtons();showScreen("select");mountHelp();
 raf=requestAnimationFrame(frame);
