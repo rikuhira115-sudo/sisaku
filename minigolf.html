@@ -3,131 +3,218 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#07120f">
-<title>MINI GOLF DUEL - ゲーム王国</title>
+<meta name="theme-color" content="#07130f">
+<title>GREEN DUEL - ミニゴルフ対決 | ゲーム王国</title>
 <style>
-:root{color-scheme:dark;--line:#2b4b43;--muted:#a7c2b9;--mint:#7ef0bd;--gold:#ffd76f}
+:root{color-scheme:dark;--ink:#f2fff7;--muted:#9dbbad;--line:#315b49;--mint:#8bffc6;--gold:#ffdf80}
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -12%,#174336,#081410 52%,#030806);color:#f3fff8;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -10%,#245b43 0,#0b1d15 40%,#040907 84%);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
 body{padding:8px 10px max(16px,env(safe-area-inset-bottom));user-select:none}
-h1{margin:5px 0 2px;font-size:clamp(1.35rem,5vw,1.8rem);font-weight:1000;letter-spacing:.06em}
-.sub{font-size:.72rem;color:#a5c5b8;margin-bottom:9px}
+header{width:min(100%,480px);margin:0 auto 10px}
+.brand{display:flex;align-items:center;justify-content:center;gap:8px;color:#d6ffe7;font-size:.64rem;font-weight:1000;letter-spacing:.25em;text-transform:uppercase}
+.brand:before,.brand:after{content:"";width:22px;height:1px;background:linear-gradient(90deg,transparent,#8bffc6)}
+.brand:after{transform:scaleX(-1)}
+h1{margin:3px 0 0;font-size:clamp(1.5rem,6vw,2.05rem);font-weight:1000;letter-spacing:.045em;line-height:1.08;text-shadow:0 3px 0 #07130d,0 0 20px #72e7a51a}
+.subtitle{margin-top:4px;color:#a9cbbb;font-size:.72rem;letter-spacing:.03em}
 .hud{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(100%,460px);margin:0 auto 8px}
-.player{border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,#142b24,#091510);padding:7px 9px;position:relative;overflow:hidden}
-.player.active{border-color:var(--mint);box-shadow:0 0 0 1px #7ef0bd33,0 0 18px #49e6a01c}
-.player small{display:block;font-size:.68rem;font-weight:900;letter-spacing:.08em;color:var(--muted)}
-.player strong{font-size:1.15rem;font-variant-numeric:tabular-nums}
-.player .holes{display:block;color:#aec8bd;font-size:.64rem;margin-top:1px}
-.p1 strong{color:#82eaff}.p2 strong{color:#ffb4d3}
-.meta{width:min(100%,460px);margin:0 auto 7px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#b6d0c4;font-size:.72rem;font-weight:850}
-#courseName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.par{padding:4px 9px;border-radius:999px;background:#163529;border:1px solid #2e5b48;color:#d4ffe4}
-.board-wrap{position:relative;width:min(94vw,50vh,420px);margin:0 auto;border-radius:18px;filter:drop-shadow(0 16px 25px #0008)}
-canvas{display:block;width:100%;height:auto;border-radius:17px;border:2px solid #3b6856;background:#133b2b;touch-action:none}
-.status{min-height:30px;margin:7px auto 3px;width:min(100%,460px);font-size:.84rem;font-weight:900;color:#e4f9ee;display:flex;align-items:center;justify-content:center}
-.controls{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:4px}
-button{color:#f4fff9;background:linear-gradient(180deg,#203b30,#112219);border:1px solid #3c6451;border-radius:12px;padding:10px 14px;font:850 .79rem system-ui;box-shadow:0 4px 0 #020805;cursor:pointer;touch-action:manipulation}
-button:active{transform:translateY(2px);box-shadow:0 2px 0 #020805}
-button.primary{background:linear-gradient(180deg,#18a66d,#08724d);border-color:#7ef0bd}
-.help{max-width:460px;margin:9px auto 0;color:#8cab9e;font-size:.68rem;line-height:1.55}
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:#03100ddd;backdrop-filter:blur(6px);border-radius:17px;z-index:3}
+.player{position:relative;overflow:hidden;text-align:left;padding:9px 11px;border:1px solid #2b4b3b;border-radius:15px;background:linear-gradient(145deg,#183528,#0a1711 78%);box-shadow:0 8px 22px #0003;transition:border-color .16s,transform .16s}
+.player:after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--pc)}
+.player.active{border-color:var(--pc);box-shadow:0 0 0 1px color-mix(in srgb,var(--pc) 22%,transparent),0 7px 22px #0004}
+.player.active .turn-chip{opacity:1;transform:translateY(0)}
+.player-top{display:flex;align-items:center;justify-content:space-between;gap:3px}
+.player small{font-size:.63rem;font-weight:1000;letter-spacing:.09em;color:#a8c7b7}
+.turn-chip{font-size:.55rem;font-weight:1000;letter-spacing:.05em;color:#062014;background:var(--pc);border-radius:999px;padding:3px 6px;opacity:.2;transform:translateY(-2px);transition:.16s}
+.total{display:flex;align-items:baseline;gap:4px;margin-top:4px;font-size:1.45rem;line-height:1.15;font-weight:1000;font-variant-numeric:tabular-nums;color:var(--pc)}
+.total span{font-size:.65rem;color:#b2cabe;font-weight:800}
+.player-bottom{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-top:4px;color:#91ad9f;font-size:.64rem;font-weight:800}
+#holeName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#parBadge{flex:0 0 auto;border:1px solid #3c7655;background:#143b28;color:#d5ffe1;border-radius:999px;padding:4px 9px;font-size:.66rem;font-weight:1000}
+.board-wrap{position:relative;width:min(94vw,54vh,440px);margin:0 auto;border-radius:21px;isolation:isolate;filter:drop-shadow(0 17px 26px #0008)}
+canvas{display:block;width:100%;height:auto;aspect-ratio:600/820;border-radius:20px;border:2px solid #416b52;background:#153c28;touch-action:none}
+.status{width:min(100%,460px);min-height:31px;display:flex;align-items:center;justify-content:center;gap:7px;margin:7px auto 2px;color:#ecfff3;font-size:.82rem;font-weight:900}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px #8bffc6aa;flex:0 0 auto}
+#hint{width:min(100%,460px);margin:0 auto;color:#8eaa9a;font-size:.66rem;line-height:1.45;min-height:19px}
+.controls{width:min(100%,460px);display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:8px auto 0}
+button{color:#f1fff7;background:linear-gradient(180deg,#254634,#12281b);border:1px solid #426c50;border-radius:12px;padding:10px 13px;font:850 .75rem system-ui;box-shadow:0 4px 0 #030805;cursor:pointer;touch-action:manipulation;transition:filter .12s,transform .12s;white-space:nowrap}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 #030805;filter:brightness(1.15)}
+button.primary{background:linear-gradient(180deg,#27bd79,#087246);border-color:#8bffc6;color:#fff}
+button:focus-visible{outline:3px solid #9cffce;outline-offset:3px}
+.scorecard{width:min(100%,460px);margin:10px auto 0;border:1px solid #274b38;border-radius:13px;background:#0a1710cc;text-align:left;overflow:hidden}
+.scorecard summary{padding:10px 12px;color:#bedacb;font-size:.72rem;font-weight:900;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.scorecard summary::-webkit-details-marker{display:none}
+.scorecard summary:after{content:"＋";color:var(--mint);font-size:1rem}
+.scorecard[open] summary:after{content:"−"}
+.table-scroll{overflow-x:auto;padding:0 8px 9px}
+table{width:100%;min-width:300px;border-collapse:collapse;font-size:.66rem;font-variant-numeric:tabular-nums}
+th,td{padding:6px 7px;text-align:center;border-bottom:1px solid #203d2d;color:#aac7b6}
+th{font-size:.6rem;color:#6e9d83;letter-spacing:.05em}
+td:first-child,th:first-child{text-align:left}
+td.hot{color:#f1fff7;font-weight:1000;background:#244a35}
+tfoot td{border-bottom:0;color:#effff5;font-weight:1000}
+.help{max-width:460px;margin:9px auto 0;color:#779885;font-size:.65rem;line-height:1.6}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(135deg,#06140feF,#04100ceb);backdrop-filter:blur(8px);border-radius:19px;z-index:3}
 .overlay.hidden{display:none}
-.dialog{width:100%;padding:20px 15px;border:1px solid #3c765d;border-radius:19px;background:linear-gradient(145deg,#173c2bF5,#07150ef5);box-shadow:0 18px 55px #000a}
-.dialog .emoji{font-size:2.35rem;filter:drop-shadow(0 0 12px #7ef0bd44)}
-.dialog h2{margin:4px 0 8px;font-size:1.28rem}
-.dialog p{margin:0 0 15px;color:#c0d9cd;font-size:.78rem;line-height:1.65}
-@media(orientation:landscape) and (max-height:520px){body{padding-top:2px}h1{font-size:1.15rem}.sub{margin-bottom:4px}.hud,.meta{margin-bottom:4px}.board-wrap{width:min(42vw,65vh)}.status{min-height:20px;margin:3px auto}.help{margin-top:4px}}
+.dialog{width:100%;padding:21px 16px 18px;border:1px solid #47795a;border-radius:21px;background:radial-gradient(ellipse at 50% 0,#245b3ccc,#102a1cf5 55%,#091710fa);box-shadow:0 20px 60px #000b,inset 0 1px #d0ffdf1c}
+.dialog .emoji{font-size:2.7rem;filter:drop-shadow(0 0 15px #8bffc644);line-height:1.15}
+.eyebrow{font-size:.6rem;font-weight:1000;letter-spacing:.2em;color:#91d9ae;margin:7px 0 3px}
+.dialog h2{margin:2px 0 9px;font-size:1.28rem;font-weight:1000;line-height:1.15}
+.dialog p{margin:0 0 15px;color:#c2ddca;font-size:.76rem;line-height:1.75}
+.dialog button{min-width:150px;padding:12px 18px;font-size:.82rem}
+.result-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:13px 0 16px}
+.result-player{padding:10px 6px;border-radius:12px;background:#07140dc9;border:1px solid #35543e}
+.result-player b{display:block;font-size:1.2rem;font-variant-numeric:tabular-nums}
+.result-player small{font-size:.62rem;color:#9fc5ad;font-weight:900}
+@media(min-width:600px){body{padding-top:12px}.board-wrap{width:min(420px,52vh)}}
+@media(orientation:landscape) and (max-height:540px){body{padding:3px 8px 8px}header{margin-bottom:4px}h1{font-size:1.2rem}.subtitle{display:none}.hud{margin-bottom:4px;width:min(100%,420px)}.player{padding:5px 8px}.total{font-size:1.05rem;margin-top:2px}.player-bottom{margin-top:2px}.board-wrap{width:min(40vw,62vh)}.status{margin:3px auto;min-height:19px}.controls{margin-top:3px}.scorecard,.help{margin-top:4px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<h1>⛳ MINI GOLF DUEL</h1>
-<div class="sub">読みとパワーで勝負。全6ホールのミニゴルフ対決。</div>
+<header>
+ <div class="brand">KINGDOM ARCADE · DUEL SERIES</div>
+ <h1>⛳ GREEN DUEL</h1>
+ <div class="subtitle">狙って、読んで、沈めろ。全6ホールのミニゴルフ対決。</div>
+</header>
 <div class="hud">
- <div id="pl0" class="player active"><small>PLAYER 1 · BLUE</small><strong id="sc0">0 打</strong><span id="hs0" class="holes">Holes: —</span></div>
- <div id="pl1" class="player"><small>PLAYER 2 · PINK</small><strong id="sc1">0 打</strong><span id="hs1" class="holes">Holes: —</span></div>
+ <div id="pl0" class="player" style="--pc:#8de8ff">
+  <div class="player-top"><small>PLAYER 1 · BLUE</small><span class="turn-chip">YOUR TURN</span></div>
+  <div class="total"><b id="sc0">0</b><span>STROKES</span></div>
+  <div class="player-bottom"><span id="hs0">HOLE 0打</span><span id="diff0">E</span></div>
+ </div>
+ <div id="pl1" class="player" style="--pc:#ff9ec8">
+  <div class="player-top"><small>PLAYER 2 · PINK</small><span class="turn-chip">YOUR TURN</span></div>
+  <div class="total"><b id="sc1">0</b><span>STROKES</span></div>
+  <div class="player-bottom"><span id="hs1">HOLE 0打</span><span id="diff1">E</span></div>
+ </div>
 </div>
-<div class="meta"><span id="courseName">HOLE 1 · GREEN VALLEY</span><span id="par" class="par">PAR 2</span></div>
+<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 7px;width:min(100%,460px);color:#d9f8e4;font-size:.68rem;font-weight:950">
+ <span id="holeName">HOLE 1 / 6 · FIRST GREEN</span><span id="parBadge">PAR 2</span>
+</div>
 <div class="board-wrap">
- <canvas id="cv" width="600" height="820" aria-label="ミニゴルフのコース"></canvas>
- <div id="overlay" class="overlay"><div class="dialog">
-  <div class="emoji">⛳</div><h2 id="ovTitle">MINI GOLF DUEL</h2>
-  <p id="ovText">スマホ1台で交互に打つ2人対戦！<br>ボールの近くから後ろへ引っ張って狙いを決め、指を離すとショット。全6ホールの合計打数が少ない方の勝ち！</p>
-  <button id="start" class="primary">ラウンド開始</button>
- </div></div>
+ <canvas id="cv" width="600" height="820" aria-label="ミニゴルフのコース。ボールをドラッグしてショットします。"></canvas>
+ <div id="overlay" class="overlay">
+  <div class="dialog">
+   <div class="emoji" id="ovEmoji">⛳</div><div class="eyebrow" id="ovEyebrow">A TWO PLAYER MINI GOLF</div>
+   <h2 id="ovTitle">GREEN DUEL</h2>
+   <p id="ovText">スマホ1台で本格ミニゴルフ対決！<br>ボールを後ろへ引いて、狙いとパワーを決めよう。全6ホールの合計打数が少ないプレイヤーの勝利。</p>
+   <button id="start" class="primary">ラウンド開始　→</button>
+  </div>
+ </div>
 </div>
-<div id="status" class="status">ボールを引っ張ってショット！</div>
-<div class="controls"><button id="reset">↻ 最初から</button><button id="next" class="primary" style="display:none">次のホールへ →</button><button id="sound">🔊 音 ON</button></div>
-<div class="help">ボールをタップしてそのまま後ろへ引くと、白いラインで方向を確認できます。引くほど強いショット！水に入ると罰打あり。壁やバンパーを使ってカップを狙おう。</div>
+<div id="status" class="status"><span class="status-dot"></span><span id="statusText">ボールを後ろへ引いてショット！</span></div>
+<div id="hint">ボール付近からドラッグ。長く引くほど強く打てる！</div>
+<div class="controls">
+ <button id="reset">↻ 最初から</button>
+ <button id="scoreToggle">▤ スコアカード</button>
+ <button id="sound">🔊 音 ON</button>
+</div>
+<details class="scorecard" id="scorecard">
+ <summary>スコアカード　—　全6ホール</summary>
+ <div class="table-scroll">
+  <table><thead><tr><th>HOLE</th><th>PAR</th><th>P1</th><th>P2</th></tr></thead><tbody id="scoreRows"></tbody><tfoot id="scoreFoot"></tfoot></table>
+ </div>
+</details>
+<div class="help">ルール：1打ずつ交代。池に入ると罰打＋打ち直し。1ホール最大8打。カップに沈めたらそのホール終了。全6ホール終了時、少ない合計打数が勝ち！</div>
 <script>
 (function(){
+'use strict';
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),W=600,H=820,$=id=>document.getElementById(id);
 const courses=[
-{name:'GREEN VALLEY',par:2,start:[300,730],hole:[300,92],walls:[[72,338,215,18],[340,510,190,18]],sand:[[390,610,125,105]],water:[],bumpers:[]},
-{name:'ZIGZAG RUN',par:3,start:[110,735],hole:[488,88],walls:[[35,265,385,20],[180,435,385,20],[35,600,385,20]],sand:[[420,300,120,100]],water:[],bumpers:[]},
-{name:'ISLAND GREEN',par:3,start:[105,735],hole:[495,94],walls:[[33,260,240,18],[326,260,240,18],[120,540,360,18]],sand:[[45,400,110,90]],water:[[205,315,190,190]],bumpers:[]},
-{name:'PINBALL PARK',par:3,start:[300,735],hole:[300,92],walls:[[60,290,185,18],[355,290,185,18],[60,520,185,18],[355,520,185,18]],sand:[],water:[],bumpers:[[210,400,28],[390,400,28],[300,565,25],[300,255,25]]},
-{name:'SAND TRAP',par:4,start:[100,735],hole:[500,90],walls:[[150,230,20,250],[280,380,250,18],[250,570,20,170]],sand:[[190,255,155,105],[360,595,150,105],[60,415,100,120]],water:[[400,275,115,85]],bumpers:[[350,505,22]]},
-{name:'CHAMPION',par:4,start:[300,735],hole:[300,84],walls:[[40,210,345,18],[220,365,340,18],[40,520,340,18],[280,665,280,18]],sand:[[65,265,110,75],[420,420,105,75]],water:[[245,555,115,80]],bumpers:[[140,420,23],[460,300,23],[300,615,22]]}
+ {name:'FIRST GREEN',par:2,tee:[300,738],cup:[300,116],walls:[[67,322,208,19],[322,505,211,19]],sand:[[391,611,123,89]],water:[],bumpers:[[282,428,20]],decor:'classic'},
+ {name:'ZIGZAG RUN',par:3,tee:[91,738],cup:[504,116],walls:[[35,230,390,19],[175,410,390,19],[35,584,390,19]],sand:[[430,268,100,91]],water:[[66,438,100,75]],bumpers:[[460,505,18]],decor:'zigzag'},
+ {name:'ISLAND GREEN',par:3,tee:[91,738],cup:[502,116],walls:[[35,244,255,19],[335,244,230,19],[142,534,330,19]],sand:[[53,384,112,95]],water:[[208,320,184,154]],bumpers:[[456,590,19]],decor:'island'},
+ {name:'PINBALL PARK',par:3,tee:[300,738],cup:[300,116],walls:[[53,291,198,19],[349,291,198,19],[53,520,198,19],[349,520,198,19]],sand:[],water:[],bumpers:[[210,388,25],[390,421,25],[300,573,22],[300,252,22]],decor:'pinball'},
+ {name:'DESERT RUSH',par:4,tee:[91,738],cup:[504,116],walls:[[138,224,20,246],[300,378,265,19],[244,573,20,175]],sand:[[174,258,121,94],[372,611,143,91],[51,415,98,105]],water:[[411,267,100,64]],bumpers:[[357,510,22]],decor:'desert'},
+ {name:'ROYAL FINALE',par:4,tee:[300,738],cup:[300,116],walls:[[35,211,342,19],[225,367,340,19],[35,531,342,19],[282,675,283,19]],sand:[[62,266,108,75],[427,423,105,76]],water:[[245,565,110,65]],bumpers:[[145,422,22],[462,308,22],[300,627,20]],decor:'royal'}
 ];
-let hole=0,active=0,phase='menu',drag=null,aim=null,particles=[],floaters=[],last=performance.now(),soundOn=true,audio=null,shake=0;
-let players=[];
+let hole=0,active=0,phase='menu',drag=null,aim=null,players=[],particles=[],floaters=[],last=performance.now(),clock=0,soundOn=true,audio=null,shake=0,trailClock=0;
 const getCourse=()=>courses[hole];
-function initPlayers(){players=[0,1].map(i=>({x:getCourse().start[0]+(i===0?-13:13),y:getCourse().start[1],startX:getCourse().start[0]+(i===0?-13:13),startY:getCourse().start[1],strokes:0,total:0,done:false,holes:[],color:i===0?'#82eaff':'#ffb4d3',dark:i===0?'#188bb8':'#ca4e83'}));active=hole%2}
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const hypot=(x,y)=>Math.hypot(x,y);
 function tone(freq,duration,type,vol){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain();o.type=type||'sine';o.frequency.value=freq;g.gain.setValueAtTime(vol||.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
-function vibrate(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-function setStatus(s){$('status').textContent=s}
-function hud(){players.forEach((p,i)=>{$('sc'+i).textContent=p.total+' 打';$('hs'+i).textContent='本洞 '+(p.strokes||0)+'打'+(p.done?' · HOLED':'');$('pl'+i).classList.toggle('active',active===i&&phase==='aim')});$('courseName').textContent='HOLE '+(hole+1)+' / 6 · '+getCourse().name;$('par').textContent='PAR '+getCourse().par;$('next').style.display=phase==='holewait'?'inline-block':'none'}
-function startGame(){hole=0;phase='aim';particles=[];floaters=[];initPlayers();overlay.classList.add('hidden');setStatus('P1の番！ボールを引いてショット');hud();last=performance.now()}
-function resetHole(){let c=getCourse();players.forEach((p,i)=>{p.x=c.start[0]+(i===0?-13:13);p.y=c.start[1];p.startX=p.x;p.startY=p.y;p.strokes=0;p.done=false;p.holes=[]});active=hole%2;phase='aim';drag=null;aim=null;hud();setStatus('HOLE '+(hole+1)+'！P'+(active+1)+'から');}
-function allDone(){return players.every(p=>p.done)}
-function nextTurn(){if(allDone()){phase='holewait';let a=players[0].holes[hole],b=players[1].holes[hole];$('ovTitle').textContent='HOLE '+(hole+1)+' COMPLETE';$('ovText').innerHTML='P1：<b>'+a+'打</b>　／　P2：<b>'+b+'打</b><br>'+ (a<b?'P1がこのホールを制した！':b<a?'P2がこのホールを制した！':'このホールは引き分け！') ;$('start').textContent='ホールを確認';$('overlay').classList.remove('hidden');setStatus('ホール終了！結果を確認して次へ');hud();return}
-active=players[1-active].done?active:1-active;
-phase='aim';drag=null;aim=null;hud();setStatus('P'+(active+1)+'の番！ボールを引いて打とう');}
-function finishRound(){phase='finished';let t0=players[0].total,t1=players[1].total;let msg=t0<t1?'PLAYER 1の勝利！':t1<t0?'PLAYER 2の勝利！':'引き分け！';$('ovTitle').textContent='🏆 ROUND COMPLETE';$('ovText').innerHTML=msg+'<br>最終スコア：<b>'+t0+'打 - '+t1+'打</b><br>少ない打数で回った方が勝ち！';$('start').textContent='もう一度プレイ';$('overlay').classList.remove('hidden');setStatus(msg);hud();tone(t0===t1?500:t0<t1?760:420,.45,'triangle',.07);vibrate([50,40,90])}
-function goNext(){if(phase!=='holewait')return;hole++;if(hole>=courses.length){finishRound();return}phase='aim';initPlayers();$('overlay').classList.add('hidden');hud();setStatus('HOLE '+(hole+1)+'！P'+(active+1)+'からスタート');}
-function pos(e){let r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-function startDrag(q,id){if(phase!=='aim'||players[active].done)return;let p=players[active];if(Math.hypot(q.x-p.x,q.y-p.y)>65){setStatus('ボールの近くから引っ張ってね');return}drag={id,startX:p.x,startY:p.y,x:q.x,y:q.y};aim=q;tone(220,.025,'sine',.02)}
+function vibrate(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+function setStatus(text,hint){$('statusText').textContent=text;if(hint!==undefined)$('hint').textContent=hint}
+function createRound(){players=[0,1].map(i=>({id:i,total:0,strokes:0,holeScores:Array(6).fill(null),done:false,x:0,y:0,startX:0,startY:0,vx:0,vy:0,r:13,color:i===0?'#8de8ff':'#ff9ec8',dark:i===0?'#1485ad':'#bd3c75',trail:[],trailTimer:0}));setupHole(0)}
+function setupHole(index){hole=index;const c=getCourse();players.forEach((p,i)=>{p.x=p.startX=c.tee[0]+(i===0?-22:22);p.y=p.startY=c.tee[1];p.vx=0;p.vy=0;p.r=13;p.strokes=0;p.done=false;p.trail=[];p.trailTimer=0});active=hole%2;phase='aim';drag=null;aim=null;particles=[];floaters=[];clock=0;updateHud();drawScorecard()}
+function totalPar(){return courses.reduce((sum,c,i)=>sum+(hole>i?c.par:0),0)}
+function relativeScore(p){let n=0;for(let i=0;i<courses.length;i++)if(p.holeScores[i]!==null)n+=p.holeScores[i]-courses[i].par;return n}
+function scoreLabel(n){return n===0?'E':n>0?'+'+n:String(n)}
+function updateHud(){players.forEach((p,i)=>{$('sc'+i).textContent=p.total;$('hs'+i).textContent='HOLE '+p.strokes+'打';$('diff'+i).textContent=scoreLabel(relativeScore(p));$('pl'+i).classList.toggle('active',active===i&&phase==='aim'&&!p.done);$('pl'+i).style.opacity=p.done?'.68':'1'});$('holeName').textContent='HOLE '+(hole+1)+' / 6 · '+getCourse().name;$('parBadge').textContent='PAR '+getCourse().par}
+function drawScorecard(){let rows='';for(let i=0;i<courses.length;i++){let a=players[0]?.holeScores[i],b=players[1]?.holeScores[i];rows+='<tr><td>'+(i+1)+' · '+courses[i].name+'</td><td>'+courses[i].par+'</td><td class="'+(i===hole?'hot':'')+'">'+(a===null||a===undefined?'—':a)+'</td><td class="'+(i===hole?'hot':'')+'">'+(b===null||b===undefined?'—':b)+'</td></tr>'}let sum0=players[0]?.total||0,sum1=players[1]?.total||0;rows+='';$('scoreRows').innerHTML=rows;$('scoreFoot').innerHTML='<tr><td>合計 / '+(hole+1)+'H</td><td>'+totalPar()+'</td><td>'+sum0+'</td><td>'+sum1+'</td></tr>'}
+function startGame(){hole=0;createRound();phase='aim';$('overlay').classList.add('hidden');$('ovTitle').textContent='GREEN DUEL';$('start').textContent='ラウンド開始　→';setStatus('P1の番！ボールを引いてショット','ボール付近からドラッグ。長く引くほど強く打てる！');updateHud();last=performance.now()}
+function scoreName(n,par){if(n===1)return 'HOLE IN ONE!';if(n<=par-2)return 'EAGLE!';if(n===par-1)return 'BIRDIE!';if(n===par)return 'PAR';if(n===par+1)return 'BOGEY';if(n===par+2)return 'DOUBLE BOGEY';return '+'+(n-par)}
+function showHoleResult(){phase='holewait';const a=players[0].holeScores[hole],b=players[1].holeScores[hole],c=getCourse();$('ovEmoji').textContent='🏁';$('ovEyebrow').textContent='HOLE '+(hole+1)+' COMPLETE';$('ovTitle').textContent=hole===5?'FINAL HOLE COMPLETE':'NICE PUTT!';$('ovText').innerHTML='「'+c.name+'」 PAR '+c.par+'<div class="result-scores"><div class="result-player"><small>PLAYER 1 · BLUE</small><b style="color:#8de8ff">'+a+' 打</b><small>'+scoreName(a,c.par)+'</small></div><div class="result-player"><small>PLAYER 2 · PINK</small><b style="color:#ff9ec8">'+b+' 打</b><small>'+scoreName(b,c.par)+'</small></div></div>'+(a<b?'このホールは P1 が獲得！':b<a?'このホールは P2 が獲得！':'このホールは引き分け！');$('start').textContent=hole===5?'最終結果を見る　→':'次のホールへ　→';$('overlay').classList.remove('hidden');setStatus('ホール終了！スコアを確認しよう','次のホールへ進むと、それぞれのボールが新しいティーに移動します');updateHud();drawScorecard();tone(a===b?520:a<b?760:430,.27,'triangle',.06);vibrate([32,35,65])}
+function finishRound(){phase='finished';const a=players[0].total,b=players[1].total,winner=a<b?'PLAYER 1':b<a?'PLAYER 2':'';$('ovEmoji').textContent=a===b?'🤝':'🏆';$('ovEyebrow').textContent='THE FINAL SCORE';$('ovTitle').textContent=a===b?'PERFECT TIE!':winner+' WINS!';$('ovText').innerHTML=(a===b?'最後まで大接戦！':'全6ホールを制したのは '+winner+'！')+'<div class="result-scores"><div class="result-player"><small>PLAYER 1 · BLUE</small><b style="color:#8de8ff">'+a+' 打</b><small>'+scoreLabel(relativeScore(players[0]))+' vs PAR</small></div><div class="result-player"><small>PLAYER 2 · PINK</small><b style="color:#ff9ec8">'+b+' 打</b><small>'+scoreLabel(relativeScore(players[1]))+' vs PAR</small></div></div>スコアカードで各ホールの結果を確認しよう。';$('start').textContent='もう一度プレイ　↻';$('overlay').classList.remove('hidden');setStatus(a===b?'引き分け！ナイスゲーム！':winner+' の勝利！','「スコアカード」を開くと各ホールの打数を見返せます');updateHud();drawScorecard();tone(a===b?500:a<b?850:390,.5,'triangle',.07);vibrate([50,35,90])}
+function nextTurn(message,hint){const p=players[active];if(!p.done&&p.strokes>=8){p.done=true;p.holeScores[hole]=p.strokes;floaters.push({x:p.x,y:p.y-30,text:'MAX 8',life:1.2,max:1.2,color:'#ffe08a'});message='P'+(active+1)+' は上限8打でこのホール終了'}
+if(players.every(q=>q.done)){showHoleResult();return}
+if(players[1-active].done){/* 相手が先に上がったら同じプレイヤーが続ける */}else{active=1-active}
+phase='aim';drag=null;aim=null;updateHud();drawScorecard();setStatus(message||('P'+(active+1)+'の番！ボールを引いて打とう'),hint||'狙いを決めてショット。カップの手前で弱く打つのも有効！')}
+function advanceHole(){if(phase!=='holewait')return;$('overlay').classList.add('hidden');if(hole===courses.length-1){finishRound();return}setupHole(hole+1);setStatus('P'+(active+1)+'からスタート！','コースごとに障害物が変わります。先を読んでルートを選ぼう！')}
+function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function startDrag(q,id){if(phase!=='aim'||players[active].done)return;const p=players[active];if(hypot(q.x-p.x,q.y-p.y)>54){setStatus('ボールの近くから引っ張ってね','ボールの周りを押して、そのまま後ろにドラッグ！');return}drag={id:id};aim=q;tone(230,.025,'sine',.018)}
 cv.addEventListener('pointerdown',e=>{e.preventDefault();startDrag(pos(e),e.pointerId);if(drag&&cv.setPointerCapture)cv.setPointerCapture(e.pointerId)});
 cv.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;e.preventDefault();aim=pos(e)});
-cv.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;let q=pos(e),p=players[active],dx=p.x-q.x,dy=p.y-q.y,len=Math.hypot(dx,dy);drag=null;aim=null;if(len<13){setStatus('もう少し後ろへ引っ張ってね');return}let power=Math.min(125,len);p.strokes++;p.total++;p.vx=dx/len*power*.105;p.vy=dy/len*power*.105;phase='moving';tone(210+power*2,.08,'triangle',.045);vibrate(12);burst(p.x,p.y,p.color,7);hud();setStatus('P'+(active+1)+' ショット！');});
+cv.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const q=pos(e),p=players[active],dx=p.x-q.x,dy=p.y-q.y,len=hypot(dx,dy);drag=null;aim=null;if(len<12){setStatus('もう少し後ろへ引っ張ってね','ドラッグ距離が短いとショットできません');return}const power=Math.min(130,len);p.strokes++;p.total++;p.vx=dx/len*power*5.25;p.vy=dy/len*power*5.25;p.trail=[];p.trailTimer=0;phase='moving';particles=[];burst(p.x,p.y,p.color,10,3.5);shake=2;tone(190+power*2.0,.09,'triangle',.045);vibrate(12);updateHud();drawScorecard();setStatus('P'+(active+1)+' ショット！','ボールが止まるまで待とう。次の打順は自動で切り替わります')});
 cv.addEventListener('pointercancel',()=>{drag=null;aim=null});
-function burst(x,y,color,n){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.4,max:.75,color,size:2+Math.random()*3})}}
-function waterReset(p){p.strokes++;p.total++;p.x=p.startX;p.y=p.startY;p.vx=0;p.vy=0;burst(p.x,p.y,'#5eeeff',20);floaters.push({x:p.x,y:p.y-30,text:'WATER! +1',life:1,max:1,color:'#85f5ff'});phase='aim';setStatus('池ポチャ！罰打 +1。交代！');tone(150,.3,'sawtooth',.04);vibrate([35,50,35]);nextTurn()}
+function burst(x,y,color,n,force){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=(.6+Math.random()*2.5)*(force||1);particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.25+Math.random()*.5,max:.75,color:color,size:1.5+Math.random()*3})}}
+function floating(x,y,text,color){floaters.push({x:x,y:y,text:text,color:color,life:1.05,max:1.05})}
 function insideRect(p,r){return p.x>r[0]&&p.x<r[0]+r[2]&&p.y>r[1]&&p.y<r[1]+r[3]}
-function bumpRect(p,r){let nx=Math.max(r[0],Math.min(p.x,r[0]+r[2])),ny=Math.max(r[1],Math.min(p.y,r[1]+r[3])),dx=p.x-nx,dy=p.y-ny,d=Math.hypot(dx,dy);if(d<p.r&&d>0){let nX=dx/d,nY=dy/d;p.x=nx+nX*(p.r+1);p.y=ny+nY*(p.r+1);let dot=p.vx*nX+p.vy*nY;if(dot<0){p.vx-=1.78*dot*nX;p.vy-=1.78*dot*nY; p.vx*=.88;p.vy*=.88;burst(p.x,p.y,'#caffc9',3);tone(160,.025,'sine',.012)}}}
-function update(dt){if(shake>0)shake=Math.max(0,shake-dt*25);let c=getCourse();if(phase==='moving'){let p=players[active];let steps=Math.max(1,Math.ceil(dt*60));for(let s=0;s<steps;s++){p.x+=p.vx/steps;p.y+=p.vy/steps;p.vx*=Math.pow(.988,1/steps);p.vy*=Math.pow(.988,1/steps);
-if(p.x<39+p.r){p.x=39+p.r;p.vx=Math.abs(p.vx)*.84}if(p.x>561-p.r){p.x=561-p.r;p.vx=-Math.abs(p.vx)*.84}if(p.y<39+p.r){p.y=39+p.r;p.vy=Math.abs(p.vy)*.84}if(p.y>781-p.r){p.y=781-p.r;p.vy=-Math.abs(p.vy)*.84}
-for(let r of c.walls)bumpRect(p,r);
-for(let b of c.bumpers){let dx=p.x-b[0],dy=p.y-b[1],d=Math.hypot(dx,dy),min=p.r+b[2];if(d<min&&d>0){let nx=dx/d,ny=dy/d;p.x=b[0]+nx*(min+1);p.y=b[1]+ny*(min+1);let dot=p.vx*nx+p.vy*ny;if(dot<0){p.vx-=1.9*dot*nx;p.vy-=1.9*dot*ny;p.vx*=.93;p.vy*=.93}burst(p.x,p.y,'#ffd76f',5);tone(280,.035,'triangle',.02)}}
-for(let w of c.water){if(insideRect(p,w)){waterReset(p);return}}
-for(let s of c.sand){if(insideRect(p,s)){p.vx*=.965;p.vy*=.965}}
-if(Math.hypot(p.x-c.hole[0],p.y-c.hole[1])<22&&Math.hypot(p.vx,p.vy)<3.4){p.x=c.hole[0];p.y=c.hole[1];p.vx=p.vy=0;p.done=true;p.holes[hole]=p.strokes;phase='aim';floaters.push({x:c.hole[0],y:c.hole[1]-34,text:p.strokes===1?'ACE!':p.strokes<=c.par-1?'BIRDIE!':p.strokes===c.par?'PAR':'+'+(p.strokes-c.par),life:1.1,max:1.1,color:p.color});burst(p.x,p.y,p.color,26);tone(640,.15,'triangle',.05);tone(900,.2,'sine',.04);vibrate([20,25,55]);nextTurn();return}
-}
-if(Math.hypot(p.vx,p.vy)<.18){p.vx=p.vy=0;if(p.strokes>=8&&!p.done){p.done=true;p.holes[hole]=p.strokes;floaters.push({x:p.x,y:p.y-25,text:'MAX STROKES',life:1,max:1,color:'#ffda83'});setStatus('上限8打！P'+(active+1)+' はこのホール終了');nextTurn()}else{setStatus('P'+(active+1)+' のボール停止。交代！');nextTurn()}}
-}
-particles.forEach(p=>{p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.vx*=.96;p.vy*=.96;p.life-=dt});particles=particles.filter(p=>p.life>0);floaters.forEach(p=>{p.y-=35*dt;p.life-=dt});floaters=floaters.filter(p=>p.life>0)}
+function resolveRect(p,r){const x=r[0],y=r[1],w=r[2],h=r[3],nx=clamp(p.x,x,x+w),ny=clamp(p.y,y,y+h);let dx=p.x-nx,dy=p.y-ny,d=hypot(dx,dy),normalX=0,normalY=0;
+ if(d>=p.r)return false;
+ if(d>0.001){normalX=dx/d;normalY=dy/d;p.x=nx+normalX*(p.r+.8);p.y=ny+normalY*(p.r+.8)}
+ else{const sides=[{d:Math.abs(p.x-x),nx:-1,ny:0},{d:Math.abs(x+w-p.x),nx:1,ny:0},{d:Math.abs(p.y-y),nx:0,ny:-1},{d:Math.abs(y+h-p.y),nx:0,ny:1}].sort((a,b)=>a.d-b.d);normalX=sides[0].nx;normalY=sides[0].ny;if(normalX<0)p.x=x-p.r-.5;else if(normalX>0)p.x=x+w+p.r+.5;else if(normalY<0)p.y=y-p.r-.5;else p.y=y+h+p.r+.5}
+ const dot=p.vx*normalX+p.vy*normalY;if(dot<0){p.vx-=1.82*dot*normalX;p.vy-=1.82*dot*normalY;p.vx*=.83;p.vy*=.83;burst(p.x,p.y,'#d0ffd6',4,1);tone(145,.03,'sine',.014)}return true}
+function resolveBumper(p,b){const dx=p.x-b[0],dy=p.y-b[1],d=hypot(dx,dy),min=p.r+b[2];if(d>=min)return;let nx,ny;if(d>.001){nx=dx/d;ny=dy/d}else{nx=0;ny=p.y<b[1]?-1:1}p.x=b[0]+nx*(min+.8);p.y=b[1]+ny*(min+.8);const dot=p.vx*nx+p.vy*ny;if(dot<0){p.vx-=1.9*dot*nx;p.vy-=1.9*dot*ny;p.vx*=.92;p.vy*=.92;burst(p.x,p.y,'#ffe28b',8,1.5);tone(270,.045,'triangle',.025);shake=2}}
+function waterPenalty(p){p.strokes++;p.total++;p.x=p.startX;p.y=p.startY;p.vx=p.vy=0;p.trail=[];burst(p.x,p.y,'#91f5ff',20,2.1);floating(p.x,p.y-28,'SPLASH! +1','#9bf6ff');tone(155,.25,'sawtooth',.04);vibrate([35,45,35]);nextTurn('池ポチャ！罰打 +1。P'+(active+1)+' の打ち直し','ボールはティーに戻りました。罰打を含めて再挑戦！')}
+function sinkBall(p){const c=getCourse();p.x=c.cup[0];p.y=c.cup[1];p.vx=p.vy=0;p.done=true;p.holeScores[hole]=p.strokes;p.trail=[];burst(p.x,p.y,p.color,28,2.5);floating(p.x,p.y-34,scoreName(p.strokes,c.par),p.color);tone(590,.13,'triangle',.05);setTimeout(()=>tone(870,.18,'sine',.035),65);vibrate([22,25,60]);nextTurn('P'+(active+1)+' がカップイン！','スコア更新！相手のボールを待って次のホールへ')}
+function update(dt){clock+=dt;if(shake>0)shake=Math.max(0,shake-dt*18);const c=getCourse();
+ if(phase==='moving'){const p=players[active];p.trailTimer+=dt;if(p.trailTimer>.035){p.trailTimer=0;p.trail.push({x:p.x,y:p.y,life:.28});if(p.trail.length>12)p.trail.shift()}
+ p.x+=p.vx*dt;p.y+=p.vy*dt;
+ let friction=1.78;for(const s of c.sand)if(insideRect(p,s)){friction=5.8;break}const damp=Math.exp(-friction*dt);p.vx*=damp;p.vy*=damp;
+ if(p.x<p.r+31){p.x=p.r+31;p.vx=Math.abs(p.vx)*.78;tone(130,.03,'sine',.014)}if(p.x>W-p.r-31){p.x=W-p.r-31;p.vx=-Math.abs(p.vx)*.78;tone(130,.03,'sine',.014)}
+ if(p.y<p.r+39){p.y=p.r+39;p.vy=Math.abs(p.vy)*.78;tone(130,.03,'sine',.014)}if(p.y>H-p.r-39){p.y=H-p.r-39;p.vy=-Math.abs(p.vy)*.78;tone(130,.03,'sine',.014)}
+ for(const wall of c.walls)resolveRect(p,wall);for(const b of c.bumpers)resolveBumper(p,b);
+ for(const w of c.water){if(insideRect(p,w)){waterPenalty(p);return}}
+ if(hypot(p.x-c.cup[0],p.y-c.cup[1])<22&&hypot(p.vx,p.vy)<125){sinkBall(p);return}
+ if(hypot(p.vx,p.vy)<12){p.vx=p.vy=0;p.trail=[];nextTurn('P'+(active+1)+' のボールが停止。打順交代！','ボールが止まりました。交代してショットしよう！')}
+ }
+ particles.forEach(p=>{p.x+=p.vx*dt*45;p.y+=p.vy*dt*45;p.vx*=Math.exp(-1.6*dt);p.vy*=Math.exp(-1.6*dt);p.life-=dt});particles=particles.filter(p=>p.life>0);
+ floaters.forEach(p=>{p.y-=28*dt;p.life-=dt});floaters=floaters.filter(p=>p.life>0);
+ players.forEach(p=>{p.trail.forEach(t=>t.life-=dt);p.trail=p.trail.filter(t=>t.life>0)})}
 function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
-function draw(){ctx.save();if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);ctx.clearRect(0,0,W,H);let c=getCourse();let bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#24613c');bg.addColorStop(.5,'#174b31');bg.addColorStop(1,'#103822');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-ctx.save();rr(ctx,28,28,544,764,18);ctx.clip();for(let y=30;y<790;y+=36){ctx.fillStyle=Math.floor(y/36)%2===0?'#ffffff07':'#001a1010';ctx.fillRect(28,y,544,18)}for(let i=0;i<65;i++){let x=(i*127+37)%544+28,y=(i*211+53)%764+28;ctx.fillStyle='#d1fae508';ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill()}
-c.water.forEach(w=>{rr(ctx,w[0],w[1],w[2],w[3],16);ctx.fillStyle='#0a6071';ctx.fill();ctx.strokeStyle='#54d8e1';ctx.lineWidth=3;ctx.stroke();ctx.save();ctx.clip();for(let i=0;i<8;i++){ctx.strokeStyle='#a7ffff22';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(w[0]+i*32,w[1]);ctx.bezierCurveTo(w[0]+i*32+30,w[1]+w[3]*.3,w[0]+i*32-20,w[1]+w[3]*.65,w[0]+i*32+12,w[1]+w[3]);ctx.stroke()}ctx.restore()});
-c.sand.forEach(s=>{rr(ctx,s[0],s[1],s[2],s[3],18);ctx.fillStyle='#d4b56c';ctx.fill();ctx.strokeStyle='#ffe7a2';ctx.lineWidth=3;ctx.stroke();for(let i=0;i<30;i++){let x=s[0]+(i*37%(s[2]-8))+4,y=s[1]+(i*23%(s[3]-8))+4;ctx.fillStyle='#8d733d55';ctx.beginPath();ctx.arc(x,y,1.7,0,Math.PI*2);ctx.fill()}});
-c.walls.forEach(w=>{rr(ctx,w[0],w[1],w[2],w[3],7);let g=ctx.createLinearGradient(w[0],w[1],w[0],w[1]+w[3]);g.addColorStop(0,'#bad9b5');g.addColorStop(.28,'#34634b');g.addColorStop(1,'#163c2a');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#c0ebbf';ctx.lineWidth=2;ctx.stroke();});
-c.bumpers.forEach(b=>{ctx.save();ctx.shadowColor='#ffcb5b';ctx.shadowBlur=18;let g=ctx.createRadialGradient(b[0]-7,b[1]-8,2,b[0],b[1],b[2]+8);g.addColorStop(0,'#fff5bc');g.addColorStop(.3,'#ffc84a');g.addColorStop(1,'#a85c1e');ctx.fillStyle=g;ctx.beginPath();ctx.arc(b[0],b[1],b[2],0,Math.PI*2);ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#ffe9a2';ctx.stroke();ctx.restore()});
-let hx=c.hole[0],hy=c.hole[1];ctx.save();ctx.fillStyle='#c6e6c4';ctx.beginPath();ctx.ellipse(hx,hy+10,25,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#04140d';ctx.beginPath();ctx.ellipse(hx,hy,18,15,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(hx+2,hy+2,14,11,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f0fff5';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(hx+8,hy-5);ctx.lineTo(hx+8,hy-72);ctx.stroke();ctx.fillStyle='#ffe07a';ctx.beginPath();ctx.moveTo(hx+10,hy-70);ctx.lineTo(hx+51,hy-59);ctx.lineTo(hx+10,hy-45);ctx.closePath();ctx.fill();ctx.restore();
-ctx.strokeStyle='#d5ffdaaa';ctx.lineWidth=4;rr(ctx,29,29,542,762,17);ctx.stroke();ctx.restore();
-players.forEach((p,i)=>{ctx.save();if(i!==active&&phase==='aim')ctx.globalAlpha=.58;ctx.shadowBlur=i===0?15:14;ctx.shadowColor=p.color;let g=ctx.createRadialGradient(p.x-5,p.y-6,1,p.x,p.y,18);g.addColorStop(0,'#ffffff');g.addColorStop(.35,p.color);g.addColorStop(1,p.dark);ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#092219';ctx.font='900 13px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i===0?'1':'2',p.x,p.y+1);ctx.restore()});
-if(drag&&aim){let p=players[active],dx=p.x-aim.x,dy=p.y-aim.y,len=Math.hypot(dx,dy),pow=Math.min(125,len);if(len>2){ctx.save();ctx.setLineDash([9,8]);ctx.lineWidth=5;ctx.strokeStyle='#ffffffd9';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+dx/len*pow*1.65,p.y+dy/len*pow*1.65);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ffffff33';ctx.beginPath();ctx.arc(p.x,p.y,23,0,Math.PI*2);ctx.fill();ctx.restore()}ctx.save();rr(ctx,95,15,410,9,5);ctx.fillStyle='#07180f99';ctx.fill();rr(ctx,95,15,410*pow/125,9,5);ctx.fillStyle=pow>90?'#ffb36b':'#83f4bd';ctx.fill();ctx.restore()}
-particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.shadowColor=p.color;ctx.shadowBlur=9;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;ctx.shadowBlur=0;
-floaters.forEach(p=>{ctx.save();ctx.globalAlpha=Math.min(1,p.life*1.7);ctx.font='1000 23px system-ui';ctx.textAlign='center';ctx.shadowColor=p.color;ctx.shadowBlur=14;ctx.lineWidth=4;ctx.strokeStyle='#062015';ctx.strokeText(p.text,p.x,p.y);ctx.fillStyle=p.color;ctx.fillText(p.text,p.x,p.y);ctx.restore()});
-ctx.restore()}
-function loop(now){let dt=Math.min(.033,(now-last)/1000||.016);last=now;update(dt);draw();requestAnimationFrame(loop)}
-$('start').addEventListener('click',()=>{if(phase==='holewait'){goNext();return}if(phase==='finished'){startGame();return}startGame()});
-$('next').addEventListener('click',()=>{goNext()});
+function drawBackground(c){const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#0a2116');bg.addColorStop(.5,'#10291a');bg.addColorStop(1,'#07140e');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<240;i++){const x=(i*157+31)%W,y=(i*271+17)%H;ctx.fillStyle=i%3===0?'#a8f5b20a':'#d8ffd306';ctx.beginPath();ctx.ellipse(x,y,1.4,3.2,(i%7)*.4,0,Math.PI*2);ctx.fill()}
+ rr(ctx,21,22,558,776,23);let edge=ctx.createLinearGradient(0,22,0,798);edge.addColorStop(0,'#8bbd86');edge.addColorStop(.15,'#446e48');edge.addColorStop(1,'#24482d');ctx.fillStyle=edge;ctx.fill();ctx.strokeStyle='#d4ffcb';ctx.lineWidth=2;ctx.stroke();
+ ctx.save();rr(ctx,32,33,536,754,18);ctx.clip();let grass=ctx.createLinearGradient(32,33,568,787);grass.addColorStop(0,'#358b50');grass.addColorStop(.5,'#277745');grass.addColorStop(1,'#1b653c');ctx.fillStyle=grass;ctx.fillRect(32,33,536,754);
+ for(let y=34;y<787;y+=37){ctx.fillStyle=Math.floor(y/37)%2===0?'#e4ffe50c':'#001d0b0d';ctx.fillRect(32,y,536,18)}
+ for(let i=0;i<115;i++){const x=39+(i*113+17)%522,y=40+(i*197+19)%736;ctx.strokeStyle='#c8ffcd12';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+3,y-5);ctx.stroke()}
+ ctx.restore();ctx.strokeStyle='#d7ffcd88';ctx.lineWidth=2;rr(ctx,31,32,538,756,19);ctx.stroke();
+ // Subtle corner stones and flowers give the course a finished arcade-board frame.
+ for(let i=0;i<4;i++){const x=i%2===0?44:556,y=i<2?47:772;ctx.fillStyle='#d7e9b4';ctx.globalAlpha=.72;ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1}
+}
+function drawWater(w){const x=w[0],y=w[1],ww=w[2],hh=w[3];ctx.save();ctx.shadowColor='#36dbe9';ctx.shadowBlur=12;rr(ctx,x,y,ww,hh,16);let g=ctx.createLinearGradient(x,y,x+ww,y+hh);g.addColorStop(0,'#117e8b');g.addColorStop(.5,'#0c5469');g.addColorStop(1,'#09384e');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#63e7e5';ctx.lineWidth=3;ctx.stroke();ctx.restore();ctx.save();rr(ctx,x+5,y+5,ww-10,hh-10,12);ctx.clip();for(let i=0;i<7;i++){const yy=y+9+i*hh/7+Math.sin(clock*2+i)*3;ctx.beginPath();ctx.moveTo(x+10,yy);ctx.bezierCurveTo(x+ww*.3,yy-7+Math.sin(clock+i)*4,x+ww*.65,yy+6,x+ww-10,yy-2);ctx.strokeStyle=i%2?'#b5ffff1e':'#b7ffff42';ctx.lineWidth=2;ctx.stroke()}ctx.restore();ctx.fillStyle='#c4ffffbb';ctx.font='900 12px system-ui';ctx.textAlign='center';ctx.fillText('WATER',x+ww/2,y+hh/2+4)}
+function drawSand(s){const x=s[0],y=s[1],w=s[2],h=s[3];ctx.save();ctx.shadowColor='#d8bb72';ctx.shadowBlur=6;rr(ctx,x,y,w,h,16);let g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#eed99a');g.addColorStop(.5,'#c4a55e');g.addColorStop(1,'#9c8045');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#f8e5ad';ctx.lineWidth=2.5;ctx.stroke();ctx.restore();ctx.save();rr(ctx,x+5,y+5,w-10,h-10,12);ctx.clip();for(let i=0;i<7;i++){ctx.beginPath();ctx.ellipse(x+w*.5,y+h*.5,i*w*.065+10,i*h*.06+5,(i%2)*.18,0,Math.PI*2);ctx.strokeStyle='#896d3c35';ctx.lineWidth=1.5;ctx.stroke()}ctx.restore()}
+function drawWall(w){const x=w[0],y=w[1],ww=w[2],hh=w[3];ctx.save();ctx.shadowColor='#06180c';ctx.shadowBlur=8;ctx.shadowOffsetY=5;rr(ctx,x,y,ww,hh,7);let g=ctx.createLinearGradient(x,y,x,y+hh);g.addColorStop(0,'#e4f1c4');g.addColorStop(.22,'#8fbd7a');g.addColorStop(.58,'#497a4c');g.addColorStop(1,'#235332');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#d7f7b3';ctx.lineWidth=2;ctx.stroke();ctx.restore();ctx.save();ctx.strokeStyle='#ffffff28';ctx.lineWidth=1;for(let x2=x+12;x2<x+ww-3;x2+=28){ctx.beginPath();ctx.moveTo(x2,y+4);ctx.lineTo(x2,y+hh-4);ctx.stroke()}ctx.restore()}
+function drawBumper(b){const x=b[0],y=b[1],r=b[2];ctx.save();ctx.shadowColor='#ffc85a';ctx.shadowBlur=17;let g=ctx.createRadialGradient(x-r*.35,y-r*.4,1,x,y,r*1.2);g.addColorStop(0,'#fffbd0');g.addColorStop(.23,'#ffdb65');g.addColorStop(.7,'#cb8633');g.addColorStop(1,'#75401d');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff0ac';ctx.lineWidth=3;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#8a511e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r*.55,0,Math.PI*2);ctx.stroke();ctx.restore()}
+function drawCup(c){const x=c.cup[0],y=c.cup[1];ctx.save();ctx.fillStyle='#0a2918aa';ctx.beginPath();ctx.ellipse(x+1,y+7,27,17,0,0,Math.PI*2);ctx.fill();let lip=ctx.createRadialGradient(x-5,y-5,2,x,y,24);lip.addColorStop(0,'#efffe7');lip.addColorStop(.62,'#a5cc91');lip.addColorStop(1,'#527e4b');ctx.fillStyle=lip;ctx.beginPath();ctx.ellipse(x,y,23,19,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#07130b';ctx.beginPath();ctx.ellipse(x,y,17,13,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(x+2,y+3,11,8,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#ecfff0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+9,y-2);ctx.lineTo(x+9,y-57);ctx.stroke();ctx.fillStyle='#ffdf80';ctx.beginPath();ctx.moveTo(x+11,y-55);ctx.quadraticCurveTo(x+29,y-51+Math.sin(clock*3)*2,x+44,y-44);ctx.lineTo(x+11,y-34);ctx.closePath();ctx.fill();ctx.strokeStyle='#fff0b3';ctx.lineWidth=1;ctx.stroke();ctx.restore()}
+function drawTee(c){const x=c.tee[0],y=c.tee[1];ctx.save();ctx.fillStyle='#07170c33';ctx.beginPath();ctx.ellipse(x,y+7,26,9,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d9ffd377';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.ellipse(x,y,29,15,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#e3f9c6';for(let dx of [-27,27]){ctx.beginPath();ctx.arc(x+dx,y,3,0,Math.PI*2);ctx.fill()}ctx.restore()}
+function drawCourse(c){drawBackground(c); // Decorative course label
+ ctx.save();rr(ctx,175,38,250,30,10);ctx.fillStyle='#06170fd9';ctx.fill();ctx.strokeStyle='#a8dba44a';ctx.lineWidth=1;ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='1000 13px system-ui';ctx.fillStyle='#e5ffdf';ctx.fillText(('0'+(hole+1)).slice(-2)+'  /  '+c.name,W/2,53);ctx.restore();
+ c.water.forEach(drawWater);c.sand.forEach(drawSand);c.walls.forEach(drawWall);c.bumpers.forEach(drawBumper);drawCup(c);drawTee(c);
+ // Dotted line and distance markers add a quiet sense of course depth.
+ ctx.save();ctx.strokeStyle='#e8ffe91a';ctx.lineWidth=1;ctx.setLineDash([3,8]);ctx.beginPath();ctx.moveTo(c.tee[0],c.tee[1]-25);ctx.lineTo(c.tee[0],c.cup[1]+25);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
+function drawBall(p,i){p.trail.forEach(t=>{ctx.globalAlpha=Math.max(0,t.life/.28)*.26;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(t.x,t.y,p.r*(t.life/.28),0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
+ ctx.save();ctx.fillStyle='#0310095c';ctx.beginPath();ctx.ellipse(p.x+3,p.y+6,p.r*1.05,p.r*.62,0,0,Math.PI*2);ctx.fill();ctx.shadowColor=p.color;ctx.shadowBlur=(phase==='moving'&&players[active]===p)?18:7;let g=ctx.createRadialGradient(p.x-p.r*.38,p.y-p.r*.45,1,p.x,p.y,p.r*1.25);g.addColorStop(0,'#ffffff');g.addColorStop(.25,i===0?'#e4fbff':'#ffe8f2');g.addColorStop(.67,p.color);g.addColorStop(1,p.dark);ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffffffd9';ctx.lineWidth=1.5;ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle=i===0?'#075576':'#7d1743';ctx.font='1000 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),p.x,p.y+.5);ctx.restore()}
+function drawAim(){if(!drag||!aim||phase!=='aim')return;const p=players[active],dx=p.x-aim.x,dy=p.y-aim.y,len=hypot(dx,dy);if(len<2)return;const power=Math.min(130,len),ux=dx/len,uy=dy/len,tipX=p.x+ux*(45+power*.9),tipY=p.y+uy*(45+power*.9);ctx.save();ctx.globalAlpha=.96;ctx.strokeStyle='#f0fff4';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(tipX,tipY);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#f5fff6';ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(tipX-ux*13-uy*7,tipY-uy*13+ux*7);ctx.lineTo(tipX-ux*13+uy*7,tipY-uy*13-ux*7);ctx.closePath();ctx.fill();ctx.globalAlpha=.9;rr(ctx,92,752,416,17,9);ctx.fillStyle='#04150bdb';ctx.fill();rr(ctx,96,756,408,9,5);ctx.fillStyle='#254d35';ctx.fill();const width=400*power/130;rr(ctx,100,756,width,9,5);let g=ctx.createLinearGradient(100,756,500,756);g.addColorStop(0,'#77f2a9');g.addColorStop(.72,'#ffe27f');g.addColorStop(1,'#ff9874');ctx.fillStyle=g;ctx.fill();ctx.globalAlpha=1;ctx.font='1000 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#effff3';ctx.fillText('POWER  '+Math.round(power/130*100)+'%',W/2,743);ctx.restore()}
+function drawParticles(){particles.forEach(p=>{ctx.save();ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.shadowColor=p.color;ctx.shadowBlur=9;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.restore()});floaters.forEach(p=>{ctx.save();ctx.globalAlpha=Math.min(1,p.life*1.5);ctx.font='1000 24px system-ui';ctx.textAlign='center';ctx.shadowColor=p.color;ctx.shadowBlur=15;ctx.lineWidth=5;ctx.strokeStyle='#052012';ctx.strokeText(p.text,p.x,p.y);ctx.fillStyle=p.color;ctx.fillText(p.text,p.x,p.y);ctx.restore()})}
+function draw(){ctx.save();if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);ctx.clearRect(-10,-10,W+20,H+20);drawCourse(getCourse());players.forEach((p,i)=>drawBall(p,i));drawAim();drawParticles();ctx.restore()}
+function loop(now){const dt=Math.min(.033,Math.max(.001,(now-last)/1000));last=now;update(dt);draw();requestAnimationFrame(loop)}
+$('start').addEventListener('click',()=>{if(phase==='holewait'){advanceHole();return}if(phase==='finished'){startGame();return}startGame()});
 $('reset').addEventListener('click',()=>{startGame()});
-$('sound').addEventListener('click',()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 音 ON':'🔇 音 OFF';if(soundOn)tone(520,.08,'sine',.03)});
-const overlay=$('overlay');
-initPlayers();hud();last=performance.now();requestAnimationFrame(loop);
+$('scoreToggle').addEventListener('click',()=>{$('scorecard').open=!$('scorecard').open;if($('scorecard').open)$('scorecard').scrollIntoView({behavior:'smooth',block:'nearest'})});
+$('sound').addEventListener('click',()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 音 ON':'🔇 音 OFF';if(soundOn)tone(540,.08,'sine',.03)});
+createRound();updateHud();drawScorecard();last=performance.now();requestAnimationFrame(loop);
 })();
 </script>
 </body>
