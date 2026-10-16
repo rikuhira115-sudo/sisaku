@@ -102,7 +102,7 @@ tfoot td{border-bottom:0;color:#effff5;font-weight:1000}
  </div>
 </div>
 <div id="status" class="status"><span class="status-dot"></span><span id="statusText">ボールを後ろへ引いてショット！</span></div>
-<div id="hint">ボール付近からドラッグ。長く引くほど強く打てる！</div>
+<div id="hint">画面のどこからでもドラッグOK！ボールと逆方向へ引いてショット。</div>
 <div class="controls">
  <button id="reset">↻ 最初から</button>
  <button id="scoreToggle">▤ スコアカード</button>
@@ -151,7 +151,7 @@ if(players[1-active].done){/* 相手が先に上がったら同じプレイヤ�
 phase='aim';drag=null;aim=null;updateHud();drawScorecard();setStatus(message||('P'+(active+1)+'の番！ボールを引いて打とう'),hint||'狙いを決めてショット。カップの手前で弱く打つのも有効！')}
 function advanceHole(){if(phase!=='holewait')return;$('overlay').classList.add('hidden');if(hole===courses.length-1){finishRound();return}setupHole(hole+1);setStatus('P'+(active+1)+'からスタート！','コースごとに障害物が変わります。先を読んでルートを選ぼう！')}
 function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-function startDrag(q,id){if(phase!=='aim'||players[active].done)return;const p=players[active];if(hypot(q.x-p.x,q.y-p.y)>54){setStatus('ボールの近くから引っ張ってね','ボールの周りを押して、そのまま後ろにドラッグ！');return}drag={id:id};aim=q;tone(230,.025,'sine',.018)}
+function startDrag(q,id){if(phase!=='aim'||players[active].done)return;const p=players[active];drag={id:id};aim=q;tone(230,.025,'sine',.018)}
 cv.addEventListener('pointerdown',e=>{e.preventDefault();startDrag(pos(e),e.pointerId);if(drag&&cv.setPointerCapture)cv.setPointerCapture(e.pointerId)});
 cv.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;e.preventDefault();aim=pos(e)});
 cv.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const q=pos(e),p=players[active],dx=p.x-q.x,dy=p.y-q.y,len=hypot(dx,dy);drag=null;aim=null;if(len<12){setStatus('もう少し後ろへ引っ張ってね','ドラッグ距離が短いとショットできません');return}const power=Math.min(130,len);p.strokes++;p.total++;p.vx=dx/len*power*5.25;p.vy=dy/len*power*5.25;p.trail=[];p.trailTimer=0;phase='moving';particles=[];burst(p.x,p.y,p.color,10,3.5);shake=2;tone(190+power*2.0,.09,'triangle',.045);vibrate(12);updateHud();drawScorecard();setStatus('P'+(active+1)+' ショット！','ボールが止まるまで待とう。次の打順は自動で切り替わります')});
