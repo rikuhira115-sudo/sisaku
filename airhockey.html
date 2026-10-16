@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#060b16">
+<title>NEON AIR HOCKEY - ゲーム王国</title>
+<style>
+:root{color-scheme:dark;--bg:#060b16;--line:#273852;--muted:#9aabc4;--cyan:#56eaff;--pink:#ff5ca8}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -15%,#18375b 0,#080e1b 48%,#03050a 100%);color:#f8fafc;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+body{padding:8px 10px max(14px,env(safe-area-inset-bottom));user-select:none}
+h1{margin:5px 0 2px;font-size:clamp(1.3rem,5vw,1.8rem);font-weight:1000;letter-spacing:.09em}
+.sub{font-size:.72rem;color:#a7bad4;margin-bottom:9px}
+.scorebar{width:min(100%,490px);margin:0 auto 8px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.player{border-radius:14px;border:1px solid var(--line);background:linear-gradient(145deg,#121e31,#09101d);padding:7px 10px;box-shadow:0 6px 18px #0004}
+.player small{display:block;font-size:.67rem;font-weight:900;letter-spacing:.12em}
+.player strong{display:block;font-size:1.65rem;line-height:1.12;font-variant-numeric:tabular-nums}
+.p1{color:var(--cyan);text-shadow:0 0 15px #56eaff55}.p2{color:var(--pink);text-shadow:0 0 15px #ff5ca855}
+.vs{font-size:.72rem;font-weight:1000;color:#8494ad}
+.table-wrap{position:relative;width:min(92vw,48vh,420px);margin:0 auto;border-radius:22px;filter:drop-shadow(0 18px 24px #0008)}
+canvas{display:block;width:100%;height:auto;border-radius:22px;touch-action:none;border:2px solid #344b67;background:#071525;box-shadow:inset 0 0 25px #000}
+.status{width:min(100%,490px);min-height:30px;margin:8px auto 3px;color:#e2e8f0;font-size:.87rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+.status em{font-style:normal;color:#fcd34d}
+.controls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:5px auto 0}
+button{color:#f8fafc;background:linear-gradient(180deg,#1c2a42,#101827);border:1px solid #354963;border-radius:12px;padding:10px 15px;font:800 .8rem system-ui;box-shadow:0 4px 0 #03060b;cursor:pointer;touch-action:manipulation}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 #03060b}
+button.primary{background:linear-gradient(180deg,#277bff,#1746bc);border-color:#6aa4ff}
+.help{max-width:460px;color:#8092ad;font-size:.69rem;line-height:1.55;margin:10px auto 0}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:#030713cc;backdrop-filter:blur(7px);border-radius:21px;z-index:3}
+.overlay.hidden{display:none}
+.dialog{width:100%;padding:22px 16px;border:1px solid #415b7e;border-radius:20px;background:linear-gradient(145deg,#13233aee,#080f1dee);box-shadow:0 18px 55px #0009}
+.dialog .emoji{font-size:2.5rem;filter:drop-shadow(0 0 15px #56eaff55)}
+.dialog h2{font-size:1.35rem;margin:5px 0 8px;letter-spacing:.05em}
+.dialog p{font-size:.8rem;color:#bac9df;line-height:1.65;margin:0 0 15px}
+#sound{min-width:42px;padding:9px 11px}
+@media(min-width:600px){.table-wrap{width:min(420px,50vh)}}
+@media (orientation:landscape) and (max-height:520px){body{padding-top:3px}h1{font-size:1.2rem}.sub{margin-bottom:4px}.scorebar{margin-bottom:4px}.table-wrap{width:min(42vw,60vh)}.status{margin:3px auto;min-height:20px}.help{margin-top:4px}}
+</style>
+</head>
+<body>
+<h1>⚡ NEON AIR HOCKEY</h1>
+<div class="sub">指先で弾け！先に7点取った方が勝利。</div>
+<div class="scorebar">
+ <div class="player p1"><small>PLAYER 1 · TOP</small><strong id="s1">0</strong></div>
+ <div class="vs">FIRST TO 7</div>
+ <div class="player p2"><small>PLAYER 2 · BOTTOM</small><strong id="s2">0</strong></div>
+</div>
+<div class="table-wrap">
+ <canvas id="cv" width="600" height="900" aria-label="エアホッケーの台"></canvas>
+ <div id="overlay" class="overlay"><div class="dialog">
+  <div class="emoji">🏒</div><h2 id="ovTitle">NEON DUEL</h2>
+  <p id="ovText">スマホ1台で2人対戦！<br>上半分をプレイヤー1、下半分をプレイヤー2が操作。自分のマレットを動かしてパックを相手ゴールへ打ち込もう。</p>
+  <button id="start" class="primary">対戦スタート！</button>
+ </div></div>
+</div>
+<div id="status" class="status">スタートして対戦しよう！</div>
+<div class="controls"><button id="reset">↻ リスタート</button><button id="sound">🔊 音 ON</button></div>
+<div class="help">上側がP1、下側がP2。各自の半分で指をスライドして操作します。2本指で同時操作OK。壁の反射と打ち返す勢いを読んで、ゴールを狙おう！</div>
+<script>
+(function(){
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),W=600,H=900;
+const $=id=>document.getElementById(id);
+let scores=[0,0],running=false,finished=false,serveTimer=0,last=0,goalFlash=0,goalText='',soundOn=true,audio=null;
+let paddles=[{x:300,y:178,px:300,py:178,r:42,color:'#56eaff',glow:'#31c9ff'},{x:300,y:722,px:300,py:722,r:42,color:'#ff5ca8',glow:'#ff3c8c'}];
+let puck={x:300,y:450,vx:0,vy:0,r:18};
+let trails=[],particles=[],pointerOwners=new Map(),shake=0;
+function tone(freq,duration,type,vol){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain();o.type=type||'sine';o.frequency.value=freq;g.gain.setValueAtTime(vol||.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
+function vibrate(pattern){try{navigator.vibrate&&navigator.vibrate(pattern)}catch(e){}}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function setStatus(t){$('status').textContent=t}
+function updateScore(){$('s1').textContent=scores[0];$('s2').textContent=scores[1]}
+function resetPoint(){puck={x:W/2,y:H/2,vx:0,vy:0,r:18};serveTimer=.72;running=true;goalFlash=0;trails=[]}
+function startMatch(){scores=[0,0];finished=false;running=true;overlay.classList.add('hidden');paddles[0].x=paddles[0].px=300;paddles[0].y=paddles[0].py=178;paddles[1].x=paddles[1].px=300;paddles[1].y=paddles[1].py=722;updateScore();resetPoint();setStatus('P1は上側、P2は下側。指でマレットを動かそう！');last=performance.now()}
+function newRound(){if(finished){startMatch();return}resetPoint();setStatus('リスタート！パックが中央から出るよ');}
+function goal(scored){scores[scored]++;updateScore();goalFlash=1.25;goalText='PLAYER '+(scored+1)+' SCORES!';shake=10;tone(scored===0?620:440,.25,'triangle',.09);tone(840,.38,'sine',.06);vibrate([35,40,60]);if(scores[scored]>=7){finished=true;running=false;goalText='PLAYER '+(scored+1)+' WINS!';$('ovTitle').textContent='🏆 PLAYER '+(scored+1)+' WIN!';$('ovText').innerHTML='最終スコア <b>'+scores[0]+' - '+scores[1]+'</b><br>ナイスゲーム！もう一戦する？';$('start').textContent='もう一度対戦';$('overlay').classList.remove('hidden');setStatus('🏆 PLAYER '+(scored+1)+' の勝利！')}else{setStatus('PLAYER '+(scored+1)+' 得点！ 次のラリー！');resetPoint()}}
+function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function movePaddle(i,x,y){const p=paddles[i];p.x=clamp(x,28+p.r,W-28-p.r);p.y=i===0?clamp(y,35+p.r,H*.48-p.r-20):clamp(y,H*.52+p.r+20,H-35-p.r)}
+cv.addEventListener('pointerdown',e=>{if(!running||finished)return;e.preventDefault();const q=pos(e),i=q.y<H/2?0:1;pointerOwners.set(e.pointerId,i);cv.setPointerCapture&&cv.setPointerCapture(e.pointerId);movePaddle(i,q.x,q.y);tone(250,.035,'sine',.015)});
+cv.addEventListener('pointermove',e=>{const i=pointerOwners.get(e.pointerId);if(i===undefined)return;e.preventDefault();const q=pos(e);movePaddle(i,q.x,q.y)});
+function release(e){pointerOwners.delete(e.pointerId)}cv.addEventListener('pointerup',release);cv.addEventListener('pointercancel',release);cv.addEventListener('lostpointercapture',release);
+function burst(x,y,color,n){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*7;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.55,max:.9,color,size:2+Math.random()*5})}}
+function collidePaddle(p,i,dt){let dx=puck.x-p.x,dy=puck.y-p.y,d=Math.hypot(dx,dy),min=p.r+puck.r;if(d>=min||d===0)return;let nx=dx/d,ny=dy/d;puck.x=p.x+nx*(min+1);puck.y=p.y+ny*(min+1);let pvx=(p.x-p.px)/Math.max(dt,.4),pvy=(p.y-p.py)/Math.max(dt,.4);let speed=Math.max(7,Math.hypot(puck.vx,puck.vy));let hit=Math.min(16,speed+Math.hypot(pvx,pvy)*.45);puck.vx=nx*hit+pvx*.48;puck.vy=ny*hit+pvy*.48;let sp=Math.hypot(puck.vx,puck.vy);if(sp>19){puck.vx=puck.vx/sp*19;puck.vy=puck.vy/sp*19}burst(puck.x,puck.y,p.color,7);tone(320+Math.random()*300,.07,'square',.035);vibrate(8)}
+function update(dt){if(shake>0)shake=Math.max(0,shake-dt*28);if(goalFlash>0)goalFlash=Math.max(0,goalFlash-dt);if(serveTimer>0){serveTimer-=dt;if(serveTimer<=0&&!finished){let angle=(Math.random()-.5)*.9;puck.vx=Math.sin(angle)*6.5;puck.vy=(Math.random()<.5?1:-1)*Math.cos(angle)*7.7} }
+paddles.forEach(p=>{p.px=p.px+(p.x-p.px)*Math.min(1,dt*25);p.py=p.py+(p.y-p.py)*Math.min(1,dt*25)});
+if(running&&!finished&&serveTimer<=0){
+puck.x+=puck.vx*dt*60;puck.y+=puck.vy*dt*60;
+puck.vx*=Math.pow(.999,dt*60);puck.vy*=Math.pow(.999,dt*60);
+trails.unshift({x:puck.x,y:puck.y,life:.23});if(trails.length>12)trails.pop();
+if(puck.x<puck.r+17){puck.x=puck.r+17;puck.vx=Math.abs(puck.vx)*.94;tone(150,.035,'sine',.018)}
+if(puck.x>W-puck.r-17){puck.x=W-puck.r-17;puck.vx=-Math.abs(puck.vx)*.94;tone(150,.035,'sine',.018)}
+if(puck.y<puck.r+10){if(Math.abs(puck.x-W/2)<105){goal(1);return}else{puck.y=puck.r+10;puck.vy=Math.abs(puck.vy)*.94}}
+if(puck.y>H-puck.r-10){if(Math.abs(puck.x-W/2)<105){goal(0);return}else{puck.y=H-puck.r-10;puck.vy=-Math.abs(puck.vy)*.94}}
+collidePaddle(paddles[0],0,dt);collidePaddle(paddles[1],1,dt);
+if(Math.hypot(puck.vx,puck.vy)<1.7&&serveTimer<=0){puck.vx+=(Math.random()-.5)*1.4;puck.vy+=puck.y<H/2?1.2:-1.2}
+}
+trails.forEach(t=>t.life-=dt);trails=trails.filter(t=>t.life>0);particles.forEach(p=>{p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.vx*=.97;p.vy*=.97;p.life-=dt});particles=particles.filter(p=>p.life>0)
+}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
+function draw(){ctx.save();if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);ctx.clearRect(-20,-20,W+40,H+40);
+let bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#0a243a');bg.addColorStop(.48,'#08192a');bg.addColorStop(1,'#201028');roundRect(ctx,7,7,W-14,H-14,28);ctx.fillStyle=bg;ctx.fill();
+ctx.save();roundRect(ctx,18,18,W-36,H-36,20);ctx.clip();
+for(let x=30;x<W;x+=30){ctx.strokeStyle='#ffffff08';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,20);ctx.lineTo(x,H-20);ctx.stroke()}
+for(let y=30;y<H;y+=30){ctx.strokeStyle='#ffffff08';ctx.beginPath();ctx.moveTo(20,y);ctx.lineTo(W-20,y);ctx.stroke()}
+ctx.strokeStyle='#56eaff55';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(22,H/2);ctx.lineTo(W-22,H/2);ctx.stroke();ctx.strokeStyle='#ff5ca844';ctx.beginPath();ctx.arc(W/2,H/2,92,0,Math.PI*2);ctx.stroke();
+ctx.setLineDash([10,12]);ctx.strokeStyle='#ffffff28';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W/2,25);ctx.lineTo(W/2,H-25);ctx.stroke();ctx.setLineDash([]);
+let topG=ctx.createLinearGradient(W/2-108,0,W/2+108,0);topG.addColorStop(0,'#112039');topG.addColorStop(.5,'#56eaff');topG.addColorStop(1,'#112039');ctx.fillStyle=topG;ctx.fillRect(W/2-108,0,216,19);ctx.fillStyle='#ff5ca8';ctx.fillRect(W/2-108,H-19,216,19);
+ctx.restore();
+roundRect(ctx,7,7,W-14,H-14,28);ctx.strokeStyle='#92bad977';ctx.lineWidth=3;ctx.stroke();
+trails.forEach(t=>{ctx.globalAlpha=t.life/.23*.34;ctx.fillStyle='#e4fcff';ctx.beginPath();ctx.arc(t.x,t.y,puck.r*(t.life/.23),0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
+paddles.forEach((p,i)=>{ctx.save();ctx.shadowBlur=26;ctx.shadowColor=p.glow;let g=ctx.createRadialGradient(p.x-p.r*.3,p.y-p.r*.4,3,p.x,p.y,p.r*1.2);g.addColorStop(0,'#ffffff');g.addColorStop(.23,p.color);g.addColorStop(1,i===0?'#0a769a':'#a51b5f');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.lineWidth=5;ctx.strokeStyle=p.color;ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#06101c';ctx.beginPath();ctx.arc(p.x,p.y,p.r*.47,0,Math.PI*2);ctx.fill();ctx.fillStyle=p.color;ctx.font='900 20px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i===0?'1':'2',p.x,p.y+1);ctx.restore()});
+ctx.save();ctx.shadowColor='#e5fdff';ctx.shadowBlur=25;let pg=ctx.createRadialGradient(puck.x-5,puck.y-6,2,puck.x,puck.y,puck.r*1.4);pg.addColorStop(0,'#fff');pg.addColorStop(.28,'#d4f8ff');pg.addColorStop(.78,'#6e8b9f');pg.addColorStop(1,'#263d55');ctx.fillStyle=pg;ctx.beginPath();ctx.arc(puck.x,puck.y,puck.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ffffffcc';ctx.lineWidth=2;ctx.stroke();ctx.restore();
+particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=9;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;ctx.shadowBlur=0;
+if(serveTimer>0&&!finished){ctx.fillStyle='#ffffffaa';ctx.textAlign='center';ctx.font='900 27px system-ui';ctx.fillText(serveTimer>.48?'READY':'GO!',W/2,H/2+8)}
+if(goalFlash>0){ctx.save();ctx.globalAlpha=Math.min(1,goalFlash*1.5);ctx.fillStyle='#030713aa';ctx.fillRect(25,H/2-57,W-50,114);ctx.textAlign='center';ctx.font='1000 32px system-ui';ctx.shadowColor='#56eaff';ctx.shadowBlur=23;ctx.fillStyle='#fff';ctx.fillText(goalText,W/2,H/2+10);ctx.restore()}
+ctx.restore()}
+function loop(now){let dt=Math.min(.032,(now-last)/1000||.016);last=now;update(dt);draw();requestAnimationFrame(loop)}
+$('start').addEventListener('click',()=>{audio=audio||null;$('ovTitle').textContent='⚡ NEON DUEL';$('start').textContent='もう一度対戦';startMatch()});
+$('reset').addEventListener('click',()=>{startMatch();$('ovTitle').textContent='⚡ NEON DUEL';$('start').textContent='対戦スタート！'});
+$('sound').addEventListener('click',()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 音 ON':'🔇 音 OFF';if(soundOn)tone(550,.08,'sine',.03)});
+const overlay=$('overlay');
+overlay.addEventListener('click',e=>{if(e.target===overlay)$('start').click()});
+updateScore();last=performance.now();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
