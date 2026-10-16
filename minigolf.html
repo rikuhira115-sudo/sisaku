@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07120f">
+<title>MINI GOLF DUEL - ゲーム王国</title>
+<style>
+:root{color-scheme:dark;--line:#2b4b43;--muted:#a7c2b9;--mint:#7ef0bd;--gold:#ffd76f}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -12%,#174336,#081410 52%,#030806);color:#f3fff8;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+body{padding:8px 10px max(16px,env(safe-area-inset-bottom));user-select:none}
+h1{margin:5px 0 2px;font-size:clamp(1.35rem,5vw,1.8rem);font-weight:1000;letter-spacing:.06em}
+.sub{font-size:.72rem;color:#a5c5b8;margin-bottom:9px}
+.hud{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(100%,460px);margin:0 auto 8px}
+.player{border:1px solid var(--line);border-radius:13px;background:linear-gradient(145deg,#142b24,#091510);padding:7px 9px;position:relative;overflow:hidden}
+.player.active{border-color:var(--mint);box-shadow:0 0 0 1px #7ef0bd33,0 0 18px #49e6a01c}
+.player small{display:block;font-size:.68rem;font-weight:900;letter-spacing:.08em;color:var(--muted)}
+.player strong{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.player .holes{display:block;color:#aec8bd;font-size:.64rem;margin-top:1px}
+.p1 strong{color:#82eaff}.p2 strong{color:#ffb4d3}
+.meta{width:min(100%,460px);margin:0 auto 7px;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#b6d0c4;font-size:.72rem;font-weight:850}
+#courseName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.par{padding:4px 9px;border-radius:999px;background:#163529;border:1px solid #2e5b48;color:#d4ffe4}
+.board-wrap{position:relative;width:min(94vw,50vh,420px);margin:0 auto;border-radius:18px;filter:drop-shadow(0 16px 25px #0008)}
+canvas{display:block;width:100%;height:auto;border-radius:17px;border:2px solid #3b6856;background:#133b2b;touch-action:none}
+.status{min-height:30px;margin:7px auto 3px;width:min(100%,460px);font-size:.84rem;font-weight:900;color:#e4f9ee;display:flex;align-items:center;justify-content:center}
+.controls{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+button{color:#f4fff9;background:linear-gradient(180deg,#203b30,#112219);border:1px solid #3c6451;border-radius:12px;padding:10px 14px;font:850 .79rem system-ui;box-shadow:0 4px 0 #020805;cursor:pointer;touch-action:manipulation}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 #020805}
+button.primary{background:linear-gradient(180deg,#18a66d,#08724d);border-color:#7ef0bd}
+.help{max-width:460px;margin:9px auto 0;color:#8cab9e;font-size:.68rem;line-height:1.55}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:#03100ddd;backdrop-filter:blur(6px);border-radius:17px;z-index:3}
+.overlay.hidden{display:none}
+.dialog{width:100%;padding:20px 15px;border:1px solid #3c765d;border-radius:19px;background:linear-gradient(145deg,#173c2bF5,#07150ef5);box-shadow:0 18px 55px #000a}
+.dialog .emoji{font-size:2.35rem;filter:drop-shadow(0 0 12px #7ef0bd44)}
+.dialog h2{margin:4px 0 8px;font-size:1.28rem}
+.dialog p{margin:0 0 15px;color:#c0d9cd;font-size:.78rem;line-height:1.65}
+@media(orientation:landscape) and (max-height:520px){body{padding-top:2px}h1{font-size:1.15rem}.sub{margin-bottom:4px}.hud,.meta{margin-bottom:4px}.board-wrap{width:min(42vw,65vh)}.status{min-height:20px;margin:3px auto}.help{margin-top:4px}}
+</style>
+</head>
+<body>
+<h1>⛳ MINI GOLF DUEL</h1>
+<div class="sub">読みとパワーで勝負。全6ホールのミニゴルフ対決。</div>
+<div class="hud">
+ <div id="pl0" class="player active"><small>PLAYER 1 · BLUE</small><strong id="sc0">0 打</strong><span id="hs0" class="holes">Holes: —</span></div>
+ <div id="pl1" class="player"><small>PLAYER 2 · PINK</small><strong id="sc1">0 打</strong><span id="hs1" class="holes">Holes: —</span></div>
+</div>
+<div class="meta"><span id="courseName">HOLE 1 · GREEN VALLEY</span><span id="par" class="par">PAR 2</span></div>
+<div class="board-wrap">
+ <canvas id="cv" width="600" height="820" aria-label="ミニゴルフのコース"></canvas>
+ <div id="overlay" class="overlay"><div class="dialog">
+  <div class="emoji">⛳</div><h2 id="ovTitle">MINI GOLF DUEL</h2>
+  <p id="ovText">スマホ1台で交互に打つ2人対戦！<br>ボールの近くから後ろへ引っ張って狙いを決め、指を離すとショット。全6ホールの合計打数が少ない方の勝ち！</p>
+  <button id="start" class="primary">ラウンド開始</button>
+ </div></div>
+</div>
+<div id="status" class="status">ボールを引っ張ってショット！</div>
+<div class="controls"><button id="reset">↻ 最初から</button><button id="next" class="primary" style="display:none">次のホールへ →</button><button id="sound">🔊 音 ON</button></div>
+<div class="help">ボールをタップしてそのまま後ろへ引くと、白いラインで方向を確認できます。引くほど強いショット！水に入ると罰打あり。壁やバンパーを使ってカップを狙おう。</div>
+<script>
+(function(){
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),W=600,H=820,$=id=>document.getElementById(id);
+const courses=[
+{name:'GREEN VALLEY',par:2,start:[300,730],hole:[300,92],walls:[[72,338,215,18],[340,510,190,18]],sand:[[390,610,125,105]],water:[],bumpers:[]},
+{name:'ZIGZAG RUN',par:3,start:[110,735],hole:[488,88],walls:[[35,265,385,20],[180,435,385,20],[35,600,385,20]],sand:[[420,300,120,100]],water:[],bumpers:[]},
+{name:'ISLAND GREEN',par:3,start:[105,735],hole:[495,94],walls:[[33,260,240,18],[326,260,240,18],[120,540,360,18]],sand:[[45,400,110,90]],water:[[205,315,190,190]],bumpers:[]},
+{name:'PINBALL PARK',par:3,start:[300,735],hole:[300,92],walls:[[60,290,185,18],[355,290,185,18],[60,520,185,18],[355,520,185,18]],sand:[],water:[],bumpers:[[210,400,28],[390,400,28],[300,565,25],[300,255,25]]},
+{name:'SAND TRAP',par:4,start:[100,735],hole:[500,90],walls:[[150,230,20,250],[280,380,250,18],[250,570,20,170]],sand:[[190,255,155,105],[360,595,150,105],[60,415,100,120]],water:[[400,275,115,85]],bumpers:[[350,505,22]]},
+{name:'CHAMPION',par:4,start:[300,735],hole:[300,84],walls:[[40,210,345,18],[220,365,340,18],[40,520,340,18],[280,665,280,18]],sand:[[65,265,110,75],[420,420,105,75]],water:[[245,555,115,80]],bumpers:[[140,420,23],[460,300,23],[300,615,22]]}
+];
+let hole=0,active=0,phase='menu',drag=null,aim=null,particles=[],floaters=[],last=performance.now(),soundOn=true,audio=null,shake=0;
+let players=[];
+const getCourse=()=>courses[hole];
+function initPlayers(){players=[0,1].map(i=>({x:getCourse().start[0]+(i===0?-13:13),y:getCourse().start[1],startX:getCourse().start[0]+(i===0?-13:13),startY:getCourse().start[1],strokes:0,total:0,done:false,holes:[],color:i===0?'#82eaff':'#ffb4d3',dark:i===0?'#188bb8':'#ca4e83'}));active=hole%2}
+function tone(freq,duration,type,vol){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();let o=audio.createOscillator(),g=audio.createGain();o.type=type||'sine';o.frequency.value=freq;g.gain.setValueAtTime(vol||.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
+function vibrate(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function setStatus(s){$('status').textContent=s}
+function hud(){players.forEach((p,i)=>{$('sc'+i).textContent=p.total+' 打';$('hs'+i).textContent='本洞 '+(p.strokes||0)+'打'+(p.done?' · HOLED':'');$('pl'+i).classList.toggle('active',active===i&&phase==='aim')});$('courseName').textContent='HOLE '+(hole+1)+' / 6 · '+getCourse().name;$('par').textContent='PAR '+getCourse().par;$('next').style.display=phase==='holewait'?'inline-block':'none'}
+function startGame(){hole=0;phase='aim';particles=[];floaters=[];initPlayers();overlay.classList.add('hidden');setStatus('P1の番！ボールを引いてショット');hud();last=performance.now()}
+function resetHole(){let c=getCourse();players.forEach((p,i)=>{p.x=c.start[0]+(i===0?-13:13);p.y=c.start[1];p.startX=p.x;p.startY=p.y;p.strokes=0;p.done=false;p.holes=[]});active=hole%2;phase='aim';drag=null;aim=null;hud();setStatus('HOLE '+(hole+1)+'！P'+(active+1)+'から');}
+function allDone(){return players.every(p=>p.done)}
+function nextTurn(){if(allDone()){phase='holewait';let a=players[0].holes[hole],b=players[1].holes[hole];$('ovTitle').textContent='HOLE '+(hole+1)+' COMPLETE';$('ovText').innerHTML='P1：<b>'+a+'打</b>　／　P2：<b>'+b+'打</b><br>'+ (a<b?'P1がこのホールを制した！':b<a?'P2がこのホールを制した！':'このホールは引き分け！') ;$('start').textContent='ホールを確認';$('overlay').classList.remove('hidden');setStatus('ホール終了！結果を確認して次へ');hud();return}
+active=players[1-active].done?active:1-active;
+phase='aim';drag=null;aim=null;hud();setStatus('P'+(active+1)+'の番！ボールを引いて打とう');}
+function finishRound(){phase='finished';let t0=players[0].total,t1=players[1].total;let msg=t0<t1?'PLAYER 1の勝利！':t1<t0?'PLAYER 2の勝利！':'引き分け！';$('ovTitle').textContent='🏆 ROUND COMPLETE';$('ovText').innerHTML=msg+'<br>最終スコア：<b>'+t0+'打 - '+t1+'打</b><br>少ない打数で回った方が勝ち！';$('start').textContent='もう一度プレイ';$('overlay').classList.remove('hidden');setStatus(msg);hud();tone(t0===t1?500:t0<t1?760:420,.45,'triangle',.07);vibrate([50,40,90])}
+function goNext(){if(phase!=='holewait')return;hole++;if(hole>=courses.length){finishRound();return}phase='aim';initPlayers();$('overlay').classList.add('hidden');hud();setStatus('HOLE '+(hole+1)+'！P'+(active+1)+'からスタート');}
+function pos(e){let r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
+function startDrag(q,id){if(phase!=='aim'||players[active].done)return;let p=players[active];if(Math.hypot(q.x-p.x,q.y-p.y)>65){setStatus('ボールの近くから引っ張ってね');return}drag={id,startX:p.x,startY:p.y,x:q.x,y:q.y};aim=q;tone(220,.025,'sine',.02)}
+cv.addEventListener('pointerdown',e=>{e.preventDefault();startDrag(pos(e),e.pointerId);if(drag&&cv.setPointerCapture)cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;e.preventDefault();aim=pos(e)});
+cv.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;let q=pos(e),p=players[active],dx=p.x-q.x,dy=p.y-q.y,len=Math.hypot(dx,dy);drag=null;aim=null;if(len<13){setStatus('もう少し後ろへ引っ張ってね');return}let power=Math.min(125,len);p.strokes++;p.total++;p.vx=dx/len*power*.105;p.vy=dy/len*power*.105;phase='moving';tone(210+power*2,.08,'triangle',.045);vibrate(12);burst(p.x,p.y,p.color,7);hud();setStatus('P'+(active+1)+' ショット！');});
+cv.addEventListener('pointercancel',()=>{drag=null;aim=null});
+function burst(x,y,color,n){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.4,max:.75,color,size:2+Math.random()*3})}}
+function waterReset(p){p.strokes++;p.total++;p.x=p.startX;p.y=p.startY;p.vx=0;p.vy=0;burst(p.x,p.y,'#5eeeff',20);floaters.push({x:p.x,y:p.y-30,text:'WATER! +1',life:1,max:1,color:'#85f5ff'});phase='aim';setStatus('池ポチャ！罰打 +1。P'+(active+1)+' は打ち直し');tone(150,.3,'sawtooth',.04);vibrate([35,50,35]);hud()}
+function insideRect(p,r){return p.x>r[0]&&p.x<r[0]+r[2]&&p.y>r[1]&&p.y<r[1]+r[3]}
+function bumpRect(p,r){let nx=Math.max(r[0],Math.min(p.x,r[0]+r[2])),ny=Math.max(r[1],Math.min(p.y,r[1]+r[3])),dx=p.x-nx,dy=p.y-ny,d=Math.hypot(dx,dy);if(d<p.r&&d>0){let nX=dx/d,nY=dy/d;p.x=nx+nX*(p.r+1);p.y=ny+nY*(p.r+1);let dot=p.vx*nX+p.vy*nY;if(dot<0){p.vx-=1.78*dot*nX;p.vy-=1.78*dot*nY; p.vx*=.88;p.vy*=.88;burst(p.x,p.y,'#caffc9',3);tone(160,.025,'sine',.012)}}}
+function update(dt){if(shake>0)shake=Math.max(0,shake-dt*25);let c=getCourse();if(phase==='moving'){let p=players[active];let steps=Math.max(1,Math.ceil(dt*60));for(let s=0;s<steps;s++){p.x+=p.vx/steps;p.y+=p.vy/steps;p.vx*=Math.pow(.988,1/steps);p.vy*=Math.pow(.988,1/steps);
+if(p.x<39+p.r){p.x=39+p.r;p.vx=Math.abs(p.vx)*.84}if(p.x>561-p.r){p.x=561-p.r;p.vx=-Math.abs(p.vx)*.84}if(p.y<39+p.r){p.y=39+p.r;p.vy=Math.abs(p.vy)*.84}if(p.y>781-p.r){p.y=781-p.r;p.vy=-Math.abs(p.vy)*.84}
+for(let r of c.walls)bumpRect(p,r);
+for(let b of c.bumpers){let dx=p.x-b[0],dy=p.y-b[1],d=Math.hypot(dx,dy),min=p.r+b[2];if(d<min&&d>0){let nx=dx/d,ny=dy/d;p.x=b[0]+nx*(min+1);p.y=b[1]+ny*(min+1);let dot=p.vx*nx+p.vy*ny;if(dot<0){p.vx-=1.9*dot*nx;p.vy-=1.9*dot*ny;p.vx*=.93;p.vy*=.93}burst(p.x,p.y,'#ffd76f',5);tone(280,.035,'triangle',.02)}}
+for(let w of c.water){if(insideRect(p,w)){waterReset(p);return}}
+for(let s of c.sand){if(insideRect(p,s)){p.vx*=.965;p.vy*=.965}}
+if(Math.hypot(p.x-c.hole[0],p.y-c.hole[1])<22&&Math.hypot(p.vx,p.vy)<3.4){p.x=c.hole[0];p.y=c.hole[1];p.vx=p.vy=0;p.done=true;p.holes[hole]=p.strokes;phase='aim';floaters.push({x:c.hole[0],y:c.hole[1]-34,text:p.strokes===1?'ACE!':p.strokes<=c.par-1?'BIRDIE!':p.strokes===c.par?'PAR':'+'+(p.strokes-c.par),life:1.1,max:1.1,color:p.color});burst(p.x,p.y,p.color,26);tone(640,.15,'triangle',.05);tone(900,.2,'sine',.04);vibrate([20,25,55]);nextTurn();return}
+}
+if(Math.hypot(p.vx,p.vy)<.18){p.vx=p.vy=0;phase='aim';if(p.strokes>=8&&!p.done){p.done=true;p.holes[hole]=p.strokes;floaters.push({x:p.x,y:p.y-25,text:'MAX STROKES',life:1,max:1,color:'#ffda83'});setStatus('上限8打！P'+(active+1)+' はこのホール終了');nextTurn()}else{setStatus('P'+(active+1)+' のボール停止。次のショット！');if(p.strokes>0&&players[1-active].done)active=active;hud()}}
+}
+particles.forEach(p=>{p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.vx*=.96;p.vy*=.96;p.life-=dt});particles=particles.filter(p=>p.life>0);floaters.forEach(p=>{p.y-=35*dt;p.life-=dt});floaters=floaters.filter(p=>p.life>0)}
+function rr(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
+function draw(){ctx.save();if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);ctx.clearRect(0,0,W,H);let c=getCourse();let bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#24613c');bg.addColorStop(.5,'#174b31');bg.addColorStop(1,'#103822');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ctx.save();rr(ctx,28,28,544,764,18);ctx.clip();for(let y=30;y<790;y+=36){ctx.fillStyle=Math.floor(y/36)%2===0?'#ffffff07':'#001a1010';ctx.fillRect(28,y,544,18)}for(let i=0;i<65;i++){let x=(i*127+37)%544+28,y=(i*211+53)%764+28;ctx.fillStyle='#d1fae508';ctx.beginPath();ctx.arc(x,y,1.5,0,Math.PI*2);ctx.fill()}
+c.water.forEach(w=>{rr(ctx,w[0],w[1],w[2],w[3],16);ctx.fillStyle='#0a6071';ctx.fill();ctx.strokeStyle='#54d8e1';ctx.lineWidth=3;ctx.stroke();ctx.save();ctx.clip();for(let i=0;i<8;i++){ctx.strokeStyle='#a7ffff22';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(w[0]+i*32,w[1]);ctx.bezierCurveTo(w[0]+i*32+30,w[1]+w[3]*.3,w[0]+i*32-20,w[1]+w[3]*.65,w[0]+i*32+12,w[1]+w[3]);ctx.stroke()}ctx.restore()});
+c.sand.forEach(s=>{rr(ctx,s[0],s[1],s[2],s[3],18);ctx.fillStyle='#d4b56c';ctx.fill();ctx.strokeStyle='#ffe7a2';ctx.lineWidth=3;ctx.stroke();for(let i=0;i<30;i++){let x=s[0]+(i*37%(s[2]-8))+4,y=s[1]+(i*23%(s[3]-8))+4;ctx.fillStyle='#8d733d55';ctx.beginPath();ctx.arc(x,y,1.7,0,Math.PI*2);ctx.fill()}});
+c.walls.forEach(w=>{rr(ctx,w[0],w[1],w[2],w[3],7);let g=ctx.createLinearGradient(w[0],w[1],w[0],w[1]+w[3]);g.addColorStop(0,'#bad9b5');g.addColorStop(.28,'#34634b');g.addColorStop(1,'#163c2a');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#c0ebbf';ctx.lineWidth=2;ctx.stroke();});
+c.bumpers.forEach(b=>{ctx.save();ctx.shadowColor='#ffcb5b';ctx.shadowBlur=18;let g=ctx.createRadialGradient(b[0]-7,b[1]-8,2,b[0],b[1],b[2]+8);g.addColorStop(0,'#fff5bc');g.addColorStop(.3,'#ffc84a');g.addColorStop(1,'#a85c1e');ctx.fillStyle=g;ctx.beginPath();ctx.arc(b[0],b[1],b[2],0,Math.PI*2);ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#ffe9a2';ctx.stroke();ctx.restore()});
+let hx=c.hole[0],hy=c.hole[1];ctx.save();ctx.fillStyle='#c6e6c4';ctx.beginPath();ctx.ellipse(hx,hy+10,25,12,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#04140d';ctx.beginPath();ctx.ellipse(hx,hy,18,15,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(hx+2,hy+2,14,11,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f0fff5';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(hx+8,hy-5);ctx.lineTo(hx+8,hy-72);ctx.stroke();ctx.fillStyle='#ffe07a';ctx.beginPath();ctx.moveTo(hx+10,hy-70);ctx.lineTo(hx+51,hy-59);ctx.lineTo(hx+10,hy-45);ctx.closePath();ctx.fill();ctx.restore();
+ctx.strokeStyle='#d5ffdaaa';ctx.lineWidth=4;rr(ctx,29,29,542,762,17);ctx.stroke();ctx.restore();
+players.forEach((p,i)=>{ctx.save();if(i!==active&&phase==='aim')ctx.globalAlpha=.58;ctx.shadowBlur=i===0?15:14;ctx.shadowColor=p.color;let g=ctx.createRadialGradient(p.x-5,p.y-6,1,p.x,p.y,18);g.addColorStop(0,'#ffffff');g.addColorStop(.35,p.color);g.addColorStop(1,p.dark);ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,15,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#092219';ctx.font='900 13px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(i===0?'1':'2',p.x,p.y+1);ctx.restore()});
+if(drag&&aim){let p=players[active],dx=p.x-aim.x,dy=p.y-aim.y,len=Math.hypot(dx,dy),pow=Math.min(125,len);if(len>2){ctx.save();ctx.setLineDash([9,8]);ctx.lineWidth=5;ctx.strokeStyle='#ffffffd9';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+dx/len*pow*1.65,p.y+dy/len*pow*1.65);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ffffff33';ctx.beginPath();ctx.arc(p.x,p.y,23,0,Math.PI*2);ctx.fill();ctx.restore()}ctx.save();rr(ctx,95,15,410,9,5);ctx.fillStyle='#07180f99';ctx.fill();rr(ctx,95,15,410*pow/125,9,5);ctx.fillStyle=pow>90?'#ffb36b':'#83f4bd';ctx.fill();ctx.restore()}
+particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.shadowColor=p.color;ctx.shadowBlur=9;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;ctx.shadowBlur=0;
+floaters.forEach(p=>{ctx.save();ctx.globalAlpha=Math.min(1,p.life*1.7);ctx.font='1000 23px system-ui';ctx.textAlign='center';ctx.shadowColor=p.color;ctx.shadowBlur=14;ctx.lineWidth=4;ctx.strokeStyle='#062015';ctx.strokeText(p.text,p.x,p.y);ctx.fillStyle=p.color;ctx.fillText(p.text,p.x,p.y);ctx.restore()});
+ctx.restore()}
+function loop(now){let dt=Math.min(.033,(now-last)/1000||.016);last=now;update(dt);draw();requestAnimationFrame(loop)}
+$('start').addEventListener('click',()=>{if(phase==='holewait'){goNext();return}if(phase==='finished'){startGame();return}startGame()});
+$('next').addEventListener('click',()=>{goNext()});
+$('reset').addEventListener('click',()=>{startGame()});
+$('sound').addEventListener('click',()=>{soundOn=!soundOn;$('sound').textContent=soundOn?'🔊 音 ON':'🔇 音 OFF';if(soundOn)tone(520,.08,'sine',.03)});
+const overlay=$('overlay');
+initPlayers();hud();last=performance.now();requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
