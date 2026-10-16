@@ -367,7 +367,6 @@ function renderSongs(){
   const card=document.createElement("article");card.className="songCard"+(selectedSong.id===song.id?" selected":"");card.dataset.song=song.id;
   card.innerHTML='<button class="previewBtn" type="button" aria-label="'+song.title+'を試聴">▶ 試聴</button><div class="cover" style="--cover:'+song.cover+'"><span class="coverTag">'+song.tag+'</span><span class="coverIcon">'+song.icon+'</span></div><div class="songBody"><div class="songTitle">'+song.title+'</div><div class="songGenre">'+song.genre+'</div><div class="songMeta"><span>'+song.jp+'</span><span class="bpm">'+song.bpm+' BPM</span></div></div>';
   card.addEventListener("click",()=>{selectedSong=song;renderSongs();updateSelectionText();});
-  card.querySelector(".previewBtn").addEventListener("click",e=>{e.stopPropagation();selectedSong=song;renderSongs();updateSelectionText();previewSong(song);});
   songGrid.appendChild(card);
  });
 }
