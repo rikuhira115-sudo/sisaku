@@ -1,1 +1,445 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>ブリックブレイク</title><style>body{margin:0;background:#030712;color:#fff;font-family:system-ui;text-align:center}h1{margin:16px 0 5px}.info{color:#94a3b8;font-weight:800}.score{font-size:1.2rem;font-weight:900;margin:8px}canvas{display:block;width:min(94vw,420px);height:auto;margin:12px auto;background:#0b1220;border:1px solid #334155;border-radius:16px;touch-action:none}.controls{display:flex;justify-content:center;gap:16px}.move{width:110px;padding:15px;border-radius:15px;border:1px solid #33415c;background:#111827;color:#fff;font-size:1.5rem;font-weight:900;touch-action:manipulation}.move:active{transform:scale(.95)}</style></head><body><h1>🧱 ブリックブレイク</h1><div id="info" class="info">バーを左右に動かしてボールを返そう</div><div id="score" class="score">0</div><canvas id="c" width="420" height="560"></canvas><div class="controls"><button class="move" id="left">◀</button><button class="move" id="right">▶</button></div><script src="common.js"></script><script>const c=document.getElementById("c"),ctx=c.getContext("2d"),info=document.getElementById("info"),scoreEl=document.getElementById("score");let px=165,bx=210,by=500,dx=3,dy=-4,score=0,br=[],run=false,raf=0;function reset(){cancelAnimationFrame(raf);px=165;bx=210;by=500;dx=3;dy=-4;score=0;br=[];for(let r=0;r<6;r++)for(let k=0;k<7;k++)br.push({x:10+k*58,y:30+r*30,on:true});scoreEl.textContent=0;info.textContent="バーを左右に動かしてボールを返そう";draw()}function start(){reset();run=true;loop()}function draw(){ctx.clearRect(0,0,420,560);ctx.fillStyle="#1e293b";ctx.fillRect(0,0,420,560);br.forEach(b=>{if(b.on){ctx.fillStyle="#38bdf8";ctx.fillRect(b.x,b.y,54,22)}});ctx.fillStyle="#fff";ctx.fillRect(px,530,90,12);ctx.beginPath();ctx.arc(bx,by,8,0,Math.PI*2);ctx.fill()}function control(v){px=Math.max(5,Math.min(325,px+v))}["left","right"].forEach(id=>{let b=document.getElementById(id),v=id==="left"?-22:22;b.addEventListener("pointerdown",e=>{control(v);b.setPointerCapture?.(e.pointerId)})});c.addEventListener("pointermove",e=>{if(e.buttons){let r=c.getBoundingClientRect();px=Math.max(5,Math.min(325,(e.clientX-r.left)/r.width*420-45))}});function loop(){if(!run)return;bx+=dx;by+=dy;if(bx<8||bx>412){bx=Math.max(8,Math.min(412,bx));dx*=-1}if(by<8){by=8;dy=Math.abs(dy)}if(by>520&&by<550&&bx>px-5&&bx<px+95){dy=-Math.abs(dy);dx=Math.max(-6,Math.min(6,(bx-(px+45))/9))}for(const b of br){if(b.on&&bx+8>b.x&&bx-8<b.x+54&&by+8>b.y&&by-8<b.y+22){b.on=false;score+=10;scoreEl.textContent=score;dy*=-1;break}}if(br.every(b=>!b.on)){run=false;info.textContent="🎉 全ブロック破壊！";draw();GameKit.finish("🎉 全ブロック破壊！ スコア "+score);return}if(by>575){run=false;info.textContent="ゲームオーバー！";draw();GameKit.finish("ゲームオーバー！ スコア "+score);return}draw();raf=requestAnimationFrame(loop)}GameKit.mount({title:"🧱 ブリックブレイク",intro:"下のバーを左右に動かして、ボールでブロックを壊します。",howto:"スマホでは画面下の◀▶ボタンを使うか、ゲーム画面上で指を左右に動かします。ボールを落とすとゲームオーバー。すべてのブロックを壊すとクリアです。",onStart:start,onRestart:start});start();</script></body></html>
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#05070c">
+<title>ブリックブレイク+ - ゲーム王国</title>
+<style>
+:root{color-scheme:dark;--bg:#05070c;--panel:#0b1424;--line:#263956;--muted:#94a3b8;--cyan:#67e8f9;--blue:#3b82f6;--pink:#fb7185}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% -10%,#18315a 0,#080e1b 42%,#02040a 100%);color:#f8fafc;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;overflow-x:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+body{padding:7px 10px 24px}
+h1{font-size:clamp(1.35rem,5vw,1.75rem);margin:4px 0 2px;font-weight:1000;letter-spacing:.02em;text-shadow:0 0 22px #38bdf855}
+.subtitle{font-size:.76rem;color:#9bb0ce;margin:0 auto 9px;letter-spacing:.04em}
+.modes{display:flex;gap:6px;justify-content:center;margin:9px auto;max-width:420px}
+.mode{flex:1;max-width:190px;border:1px solid #2b4161;background:#0b1423;color:#a8b9d3;border-radius:11px;padding:9px 7px;font-weight:900;font-size:.82rem;touch-action:manipulation}
+.mode.active{color:white;border-color:#5caaff;background:linear-gradient(135deg,#2563eb,#164e9a);box-shadow:0 0 20px #2563eb40}
+.hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;width:min(100%,420px);margin:8px auto 8px}
+.stat{min-width:0;padding:6px 4px;border:1px solid #243753;border-radius:11px;background:linear-gradient(145deg,#101c30dd,#080f1bdd);box-shadow:inset 0 1px #ffffff08}
+.stat small{display:block;font-size:.61rem;color:#8ea4c3;font-weight:800;letter-spacing:.06em}
+.stat strong{display:block;font-size:clamp(.9rem,3.7vw,1.12rem);font-weight:1000;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#lives{letter-spacing:-.08em;color:#fb7185;font-size:clamp(.76rem,3.2vw,1rem)}
+#comboStat{color:#fbbf24}
+#bossHud{width:min(100%,420px);margin:0 auto 7px;text-align:left}
+.boss-title{display:flex;justify-content:space-between;font-size:.7rem;color:#fecdd3;font-weight:900;margin-bottom:4px}
+.boss-track{height:7px;border-radius:9px;overflow:hidden;background:#3f1725;border:1px solid #7f1d32}
+#bossBar{height:100%;width:100%;background:linear-gradient(90deg,#fb7185,#f97316);box-shadow:0 0 12px #fb7185;transition:width .12s}
+.hidden{display:none!important}
+#gameWrap{width:min(100%,420px);margin:0 auto;position:relative;border-radius:17px}
+canvas{display:block;width:100%;height:auto;aspect-ratio:3/4;border-radius:17px;border:1px solid #355176;background:#07101f;box-shadow:0 12px 34px #0009,0 0 25px #0ea5e91a;touch-action:none;cursor:crosshair}
+#info{min-height:30px;margin:8px auto 5px;font-size:.82rem;font-weight:850;color:#d4e2f7;line-height:1.4}
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:min(100%,420px);margin:7px auto 0}
+.ctrl{min-height:48px;border-radius:13px;border:1px solid #304865;background:linear-gradient(180deg,#192840,#0b1423);color:#fff;font-size:1.28rem;font-weight:1000;box-shadow:0 4px 0 #030711;touch-action:none;user-select:none;-webkit-user-select:none}
+.ctrl:active{transform:translateY(2px);box-shadow:0 2px 0 #030711}
+.ctrl.primary{background:linear-gradient(180deg,#0e9ac4,#155e9a);border-color:#67e8f9;box-shadow:0 4px 0 #064666}
+.ctrl.special{font-size:.82rem;background:linear-gradient(180deg,#4338ca,#1e1b4b);border-color:#818cf8}
+.extra-controls{display:flex;justify-content:center;gap:8px;width:min(100%,420px);margin:9px auto 0}
+.mini{flex:1;border:1px solid #253753;background:#0a1220;color:#bbcee8;border-radius:10px;padding:8px 9px;font-size:.73rem;font-weight:850}
+.legend{max-width:420px;margin:10px auto 0;color:#7186a7;font-size:.67rem;line-height:1.7}
+.power-note{color:#9ecbf3;font-weight:800}
+.kit-actions{margin:8px auto!important}
+@media(min-width:500px){body{padding-top:10px}.subtitle{font-size:.8rem}}
+@media(max-width:350px){body{padding-left:6px;padding-right:6px}.hud{gap:4px}.stat{padding:5px 2px}.ctrl{min-height:44px}.modes{gap:4px}.mode{font-size:.75rem}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<h1>🧱 ブリックブレイク+</h1>
+<p class="subtitle">狙って、連鎖して、ボスを倒せ。スマホ対応アーケード。</p>
+
+<div class="modes" aria-label="ゲームモード">
+  <button class="mode active" id="stageMode">🏆 ステージ攻略</button>
+  <button class="mode" id="endlessMode">♾️ エンドレス</button>
+</div>
+
+<div class="hud">
+  <div class="stat"><small>SCORE</small><strong id="score">0</strong></div>
+  <div class="stat"><small>STAGE</small><strong id="stage">1 / 10</strong></div>
+  <div class="stat"><small>残りライフ</small><strong id="lives">❤❤❤</strong></div>
+  <div class="stat" id="comboStat"><small>BEST</small><strong id="best">0</strong></div>
+</div>
+<div id="bossHud" class="hidden">
+  <div class="boss-title"><span>⚠️ GUARDIAN CORE</span><span id="bossText">18 / 18</span></div>
+  <div class="boss-track"><div id="bossBar"></div></div>
+</div>
+<div id="gameWrap"><canvas id="c" width="420" height="560" aria-label="ブリックブレイクのゲーム画面"></canvas></div>
+<div id="info" role="status" aria-live="polite">画面をタップしてボールを発射！</div>
+<div class="controls">
+  <button class="ctrl" id="left" aria-label="左へ移動">◀</button>
+  <button class="ctrl primary" id="launch">🚀 発射</button>
+  <button class="ctrl" id="right" aria-label="右へ移動">▶</button>
+</div>
+<div class="extra-controls">
+  <button class="mini" id="pause">⏸ 一時停止</button>
+  <button class="mini" id="sound">🔊 サウンド ON</button>
+</div>
+<div class="legend">
+  <span class="power-note">POWER-UP</span>　W:バー拡大　M:マルチボール　S:スロー　L:レーザー　＋:シールド<br>
+  画面を指で左右にスライドしても操作できます。連続ヒットでコンボ倍率アップ！<br>
+  ステージ攻略は全10面・2回のボス戦。エンドレスは何面まで進めるか挑戦。
+</div>
+
+<script src="common.js"></script>
+<script>
+(function(){
+"use strict";
+const W=420,H=560,TAU=Math.PI*2;
+const c=document.getElementById("c"),ctx=c.getContext("2d");
+const info=document.getElementById("info"),scoreEl=document.getElementById("score"),stageEl=document.getElementById("stage"),livesEl=document.getElementById("lives"),bestEl=document.getElementById("best"),bossHud=document.getElementById("bossHud"),bossBar=document.getElementById("bossBar"),bossText=document.getElementById("bossText"),launchBtn=document.getElementById("launch"),pauseBtn=document.getElementById("pause"),soundBtn=document.getElementById("sound");
+const colors=["#38bdf8","#818cf8","#c084fc","#fb7185","#fb923c","#facc15","#4ade80"];
+const powerLabels={wide:"W",multi:"M",slow:"S",laser:"L",shield:"+"};
+let mode="stage",state="ready",score=0,best=0,level=1,lives=3,combo=0,lastBrickAt=-10;
+let paddle={x:166,y:523,w:88,h:12},balls=[],bricks=[],drops=[],particles=[],bolts=[],stars=[];
+let boss=null,clock=0,shake=0,flash=0,transitionTimer=0,laserClock=0,hitCooldown=0,dir=0,sfxOn=true,audio=null;
+let power={wide:0,slow:0,laser:0,shield:0},raf=0,lastFrame=0,keys={};
+try{best=Number(localStorage.getItem("gk_brick_best_v2")||0)||0;}catch(e){best=0;}
+bestEl.textContent=best.toLocaleString("ja-JP");
+for(let i=0;i<55;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:.4+Math.random()*1.5,p:Math.random()*TAU,s:.5+Math.random()*1.7});
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function rnd(a,b){return a+Math.random()*(b-a);}
+function rounded(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function setInfo(t){info.textContent=t;}
+function beep(freq,duration,type,volume){
+ if(!sfxOn)return;
+ try{
+  audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+  if(audio.state==="suspended")audio.resume();
+  const o=audio.createOscillator(),g=audio.createGain();
+  o.type=type||"sine";o.frequency.value=freq;g.gain.setValueAtTime(volume||.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+(duration||.08));o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+(duration||.08));
+ }catch(e){}
+}
+function makeBall(x,y,vx,vy){return{x:x,y:y,vx:vx||0,vy:vy||0,r:7,trail:[]};}
+function initStage(autoLaunch){
+ paddle.w=power.wide>0?126:88;paddle.x=clamp(paddle.x,8,W-paddle.w-8);paddle.y=523;
+ balls=[makeBall(paddle.x+paddle.w/2,paddle.y-12,0,0)];drops=[];bolts=[];bricks=[];boss=null;laserClock=0;hitCooldown=0;
+ if(level%5===0){
+  const hp=level>=10?26:18;
+  boss={x:135,y:72,w:150,h:33,hp:hp,maxHp:hp,hitCooldown:0,phase:rnd(0,TAU)};
+ }else{
+  const pattern=(level-1)%6,cols=8,rows=6,gap=5,bw=(W-20-gap*(cols-1))/cols,bh=21;
+  for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){
+   let on=true;
+   if(pattern===1)on=(Math.abs(col-3.5)+Math.abs(r-2.5)<=4.8);
+   if(pattern===2)on=((r+col)%2===0)||(r===0||r===1);
+   if(pattern===3)on=(col>=r%4&&col<=7-(r%4));
+   if(pattern===4)on=(r%2===0)||(col===1||col===6);
+   if(pattern===5)on=Math.abs(col-3.5)<=2+(Math.sin(r*1.4)*1.6);
+   if(on){
+    const x=10+col*(bw+gap),y=34+r*(bh+6);
+    const hp=(level>=3&&r<2&&Math.random()<.5)?2:1;
+    const bomb=level>=4&&((r*3+col+level)%11===0);
+    bricks.push({x:x,y:y,w:bw,h:bh,hp,maxHp:hp,row:r,type:bomb?"bomb":"normal"});
+   }
+  }
+ }
+ if(autoLaunch){state="playing";launchAll();}
+ else{state="ready";setInfo("画面をタップしてボールを発射！");}
+ updateHud();
+}
+function restartGame(){
+ score=0;level=1;lives=3;combo=0;lastBrickAt=-10;clock=0;shake=0;flash=0;transitionTimer=0;
+ power={wide:0,slow:0,laser:0,shield:0};particles=[];drops=[];bolts=[];paddle.w=88;paddle.x=(W-paddle.w)/2;
+ initStage(false);setInfo("準備OK！ 画面タップか「発射」でスタート");updateHud();
+}
+function launchAll(){
+ balls.forEach((b,i)=>{
+  if(Math.abs(b.vx)+Math.abs(b.vy)<.01){
+   const v=rnd(-2.5,2.5);b.vx=v;b.vy=-Math.sqrt(34-v*v);
+  }
+ });
+}
+function launch(){
+ if(state==="ready"){state="playing";launchAll();beep(460,.09,"triangle");setInfo("連続ヒットでコンボを狙おう！");}
+ else if(state==="paused"){state=previousState||"playing";pauseBtn.textContent="⏸ 一時停止";}
+}
+let previousState="playing";
+function movePaddleTo(clientX){
+ const rect=c.getBoundingClientRect();if(!rect.width)return;
+ paddle.x=clamp((clientX-rect.left)*W/rect.width-paddle.w/2,5,W-paddle.w-5);
+ if(state==="ready")balls.forEach(b=>{if(Math.abs(b.vx)+Math.abs(b.vy)<.01){b.x=paddle.x+paddle.w/2;b.y=paddle.y-12;}});
+}
+function spawnParticles(x,y,color,count,powerful){
+ for(let i=0;i<count;i++){const a=Math.random()*TAU,s=rnd(powerful?1.5:.6,powerful?5:.2+2.2);particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rnd(.3,.68),max:.68,size:rnd(1.5,powerful?4:2.8),color:color});}
+}
+function popup(x,y,text,color){particles.push({x:x,y:y,vx:0,vy:-.6,life:.72,max:.72,size:0,text:text,color:color});}
+function getCombo(){return Math.min(8,Math.max(1,combo));}
+function registerHit(x,y,color,points){
+ const now=clock;
+ combo=(now-lastBrickAt<2.3)?combo+1:1;lastBrickAt=now;
+ const bonus=points*getCombo();score+=bonus;spawnParticles(x,y,color,9,true);popup(x,y-5,"+"+bonus+(combo>=3?"  x"+getCombo():""),combo>=3?"#fbbf24":"#e0f2fe");
+ shake=Math.min(7,shake+1.3);flash=Math.max(flash,.06);beep(290+Math.min(combo,8)*50,.045,"square",.022);
+}
+function spawnDrop(b){
+ if(Math.random()>.19)return;
+ const list=["wide","multi","slow","laser","shield"],type=list[Math.floor(Math.random()*list.length)];
+ drops.push({x:b.x+b.w/2,y:b.y+b.h/2,vy:1.45,type,phase:Math.random()*TAU});
+}
+function explodeBrick(b){
+ spawnParticles(b.x+b.w/2,b.y+b.h/2,"#fb923c",18,true);
+ for(const other of bricks){
+  if(other===b||other.hp<=0)continue;
+  if(Math.abs((other.x+other.w/2)-(b.x+b.w/2))<72&&Math.abs((other.y+other.h/2)-(b.y+b.h/2))<43){
+   other.hp=0;score+=5;spawnParticles(other.x+other.w/2,other.y+other.h/2,"#fdba74",7,false);
+  }
+ }
+}
+function hitBrick(b){
+ if(b.hp<=0)return;
+ b.hp--;
+ if(b.hp>0){spawnParticles(b.x+b.w/2,b.y+b.h/2,colors[b.row%colors.length],5,false);beep(260,.035,"sine",.017);return;}
+ const col=b.type==="bomb"?"#fb923c":colors[b.row%colors.length];
+ registerHit(b.x+b.w/2,b.y+b.h/2,col,10);
+ if(b.type==="bomb"){explodeBrick(b);popup(b.x+b.w/2,b.y,"BOOM!","#fdba74");}
+ spawnDrop(b);
+}
+function applyPower(type){
+ if(type==="wide"){power.wide=10;paddle.w=126;paddle.x=clamp(paddle.x,5,W-paddle.w-5);setInfo("WIDE BAR！バーが広がった");}
+ if(type==="multi"){
+  const old=balls.slice();
+  old.forEach(b=>{if(balls.length<7){balls.push(makeBall(b.x,b.y,b.vx*.82-b.vy*.22,b.vy*.82+b.vx*.22));}if(balls.length<7){balls.push(makeBall(b.x,b.y,b.vx*.82+b.vy*.22,b.vy*.82-b.vx*.22));}});
+  setInfo("MULTI BALL！ボール増殖！");
+ }
+ if(type==="slow"){power.slow=8;setInfo("SLOW！時間をゆっくりに");}
+ if(type==="laser"){power.laser=8;laserClock=0;setInfo("LASER！自動連射スタート");}
+ if(type==="shield"){power.shield=1;setInfo("SHIELD！落下を1回防ぐ");}
+ spawnParticles(paddle.x+paddle.w/2,paddle.y,"#67e8f9",16,true);beep(740,.11,"triangle",.04);updateHud();
+}
+function bossHit(b){
+ if(!boss||boss.hp<=0||boss.hitCooldown>0)return;
+ const px=clamp(b.x,boss.x,boss.x+boss.w),py=clamp(b.y,boss.y,boss.y+boss.h);
+ if((b.x-px)*(b.x-px)+(b.y-py)*(b.y-py)<b.r*b.r&&b.vy<0){
+  b.vy=Math.abs(b.vy);boss.hp--;boss.hitCooldown=.13;registerHit(b.x,b.y,"#fb7185",25);popup(boss.x+boss.w/2,boss.y+boss.h,"HIT!","#fecdd3");
+  if(boss.hp<=0){spawnParticles(boss.x+boss.w/2,boss.y+boss.h/2,"#fda4af",70,true);score+=600;popup(boss.x+boss.w/2,boss.y,"BOSS DOWN +600","#fff");completeStage();}
+ }
+}
+function completeStage(){
+ if(state!=="playing")return;
+ score+=100+level*20;if(level%3===0&&lives<5)lives++;
+ state="stageClear";transitionTimer=1.25;shake=10;flash=.35;beep(780,.18,"triangle",.05);setInfo("STAGE "+level+" CLEAR！");
+ updateHud();
+}
+function endGame(won){
+ state=won?"won":"over";
+ if(score>best){best=score;try{localStorage.setItem("gk_brick_best_v2",String(best));}catch(e){}}
+ updateHud();
+ if(won){setInfo("🎉 全10ステージ制覇！おめでとう！");if(window.GameKit)GameKit.finish("🎉 全10ステージ制覇！ スコア "+score.toLocaleString("ja-JP"));}
+ else{setInfo("ゲームオーバー！「最初から」でリトライ");if(window.GameKit)GameKit.finish("ゲームオーバー！ スコア "+score.toLocaleString("ja-JP"));}
+}
+function updateHud(){
+ scoreEl.textContent=score.toLocaleString("ja-JP");stageEl.textContent=mode==="stage"?(level+" / 10"):("STAGE "+level);
+ livesEl.textContent="❤".repeat(Math.max(0,lives))+"♡".repeat(Math.max(0,3-lives));
+ bestEl.textContent=best.toLocaleString("ja-JP");
+ const comboStat=document.getElementById("comboStat");
+ comboStat.querySelector("small").textContent=combo>=2?"COMBO":"BEST";
+ comboStat.querySelector("strong").textContent=combo>=2?("x"+getCombo()):best.toLocaleString("ja-JP");
+ if(boss&&boss.hp>0){bossHud.classList.remove("hidden");bossText.textContent=boss.hp+" / "+boss.maxHp;bossBar.style.width=(100*boss.hp/boss.maxHp)+"%";}
+ else bossHud.classList.add("hidden");
+ const active=[];
+ if(power.wide>0)active.push("WIDE "+Math.ceil(power.wide)+"s");
+ if(power.slow>0)active.push("SLOW "+Math.ceil(power.slow)+"s");
+ if(power.laser>0)active.push("LASER "+Math.ceil(power.laser)+"s");
+ if(power.shield>0)active.push("SHIELD");
+ if(state==="ready")launchBtn.textContent="🚀 発射";
+ else if(state==="paused")launchBtn.textContent="▶ 再開";
+ else if(state==="playing")launchBtn.textContent="⚡ プレイ中";
+ if(active.length&&state==="playing")pauseBtn.title=active.join(" · ");
+}
+function advanceStage(){
+ if(mode==="stage"&&level>=10){endGame(true);return;}
+ level++;initStage(true);setInfo(level%5===0?"⚠️ BOSS BATTLE！コアを狙え！":"STAGE "+level+"　スタート！");updateHud();
+}
+function loseBall(){
+ if(power.shield>0){
+  power.shield=0;balls.push(makeBall(rnd(paddle.x+8,paddle.x+paddle.w-8),H-26,rnd(-2,2),-5.8));flash=.24;shake=5;setInfo("シールド発動！ボールを救出");beep(540,.12,"sawtooth",.025);return;
+ }
+ lives--;combo=0;balls=[];
+ spawnParticles(paddle.x+paddle.w/2,H-5,"#fb7185",22,true);
+ if(lives<=0){endGame(false);return;}
+ balls=[makeBall(paddle.x+paddle.w/2,paddle.y-12,0,0)];state="ready";setInfo("ライフを失った！残り "+lives+"　タップで再発射");beep(140,.2,"sawtooth",.04);updateHud();
+}
+function update(dt){
+ clock+=dt;shake=Math.max(0,shake-dt*18);flash=Math.max(0,flash-dt);
+ if(state==="paused"||state==="over"||state==="won")return;
+ if(state==="stageClear"){
+  transitionTimer-=dt;
+  if(transitionTimer<=0)advanceStage();
+  return;
+ }
+ if(keys.ArrowLeft||keys.a||keys.A)dir=-1;
+ else if(keys.ArrowRight||keys.d||keys.D)dir=1;
+ else if(!document.getElementById("left").matches(":active")&&!document.getElementById("right").matches(":active"))dir=0;
+ if(dir!==0)paddle.x=clamp(paddle.x+dir*340*dt,5,W-paddle.w-5);
+ if(state==="ready"){
+  balls.forEach(b=>{b.x=paddle.x+paddle.w/2;b.y=paddle.y-12;});
+  return;
+ }
+ power.wide=Math.max(0,power.wide-dt);power.slow=Math.max(0,power.slow-dt);power.laser=Math.max(0,power.laser-dt);
+ if(power.wide===0&&paddle.w!==88){paddle.w=88;paddle.x=clamp(paddle.x,5,W-paddle.w-5);}
+ if(boss)boss.hitCooldown=Math.max(0,boss.hitCooldown-dt);
+ if(combo>0&&clock-lastBrickAt>2.3)combo=0;
+ if(power.laser>0){
+  laserClock-=dt;
+  if(laserClock<=0){laserClock=.42;bolts.push({x:paddle.x+paddle.w*.29,y:paddle.y-6,vy:-520},{x:paddle.x+paddle.w*.71,y:paddle.y-6,vy:-520});beep(800,.025,"square",.009);}
+ }
+ const speedScale=power.slow>0?.68:1;
+ const lost=[];
+ for(let i=0;i<balls.length;i++){
+  const b=balls[i];b.trail.push({x:b.x,y:b.y});if(b.trail.length>7)b.trail.shift();
+  const oldX=b.x,oldY=b.y;b.x+=b.vx*speedScale*dt*60;b.y+=b.vy*speedScale*dt*60;
+  if(b.x<b.r){b.x=b.r;b.vx=Math.abs(b.vx);beep(180,.025,"sine",.008);}
+  if(b.x>W-b.r){b.x=W-b.r;b.vx=-Math.abs(b.vx);beep(180,.025,"sine",.008);}
+  if(b.y<b.r+4){b.y=b.r+4;b.vy=Math.abs(b.vy);}
+  if(b.vy>0&&oldY+b.r<=paddle.y+2&&b.y+b.r>=paddle.y&&b.x>=paddle.x-2&&b.x<=paddle.x+paddle.w+2){
+   b.y=paddle.y-b.r;let rel=clamp((b.x-(paddle.x+paddle.w/2))/(paddle.w*.5),-.94,.94);
+   const sp=Math.min(8.2,Math.max(5.4,Math.hypot(b.vx,b.vy)+.035));b.vx=rel*sp*.88;b.vy=-Math.sqrt(Math.max(8,sp*sp-b.vx*b.vx));
+   spawnParticles(b.x,paddle.y,"#67e8f9",5,false);beep(350+Math.abs(rel)*220,.045,"triangle",.018);
+  }
+  if(boss)bossHit(b);
+  if(!boss){
+   for(const block of bricks){
+    if(block.hp<=0)continue;
+    const cx=clamp(b.x,block.x,block.x+block.w),cy=clamp(b.y,block.y,block.y+block.h);
+    if((b.x-cx)*(b.x-cx)+(b.y-cy)*(b.y-cy)<b.r*b.r){
+     const ox=Math.min(b.x+b.r,block.x+block.w)-Math.max(b.x-b.r,block.x);
+     const oy=Math.min(b.y+b.r,block.y+block.h)-Math.max(b.y-b.r,block.y);
+     if(ox<oy)b.vx=oldX<block.x? -Math.abs(b.vx):Math.abs(b.vx);
+     else b.vy=oldY<block.y? -Math.abs(b.vy):Math.abs(b.vy);
+     hitBrick(block);break;
+    }
+   }
+  }
+  if(b.y>H+b.r){
+   if(power.shield>0&&balls.length===1){power.shield=0;b.y=H-24;b.vy=-Math.abs(b.vy);flash=.16;setInfo("シールド発動！落下を防いだ");beep(530,.1,"sine",.03);}
+   else lost.push(i);
+  }
+ }
+ for(let i=lost.length-1;i>=0;i--)balls.splice(lost[i],1);
+ if(balls.length===0&&state==="playing"){loseBall();if(state!=="playing")return;}
+ for(let i=drops.length-1;i>=0;i--){
+  const d=drops[i];d.y+=d.vy*60*dt;d.phase+=dt*4;
+  if(d.y>paddle.y-3&&d.y<paddle.y+paddle.h+8&&d.x>paddle.x-3&&d.x<paddle.x+paddle.w+3){applyPower(d.type);drops.splice(i,1);continue;}
+  if(d.y>H+22)drops.splice(i,1);
+ }
+ for(let i=bolts.length-1;i>=0;i--){
+  const bolt=bolts[i];bolt.y+=bolt.vy*dt;let hit=false;
+  if(boss&&bolt.y<boss.y+boss.h&&bolt.y>boss.y-8&&bolt.x>boss.x&&bolt.x<boss.x+boss.w&&boss.hp>0&&boss.hitCooldown<=0){
+   boss.hp--;boss.hitCooldown=.08;score+=20;spawnParticles(bolt.x,bolt.y,"#67e8f9",7,false);hit=true;
+   if(boss.hp<=0){score+=600;completeStage();}
+  }else if(!boss){
+   for(const block of bricks){if(block.hp>0&&bolt.x>=block.x&&bolt.x<=block.x+block.w&&bolt.y>=block.y&&bolt.y<=block.y+block.h){hitBrick(block);hit=true;break;}}
+  }
+  if(hit||bolt.y<-10)bolts.splice(i,1);
+ }
+ for(let i=particles.length-1;i>=0;i--){
+  const p=particles[i];p.life-=dt;p.x+=p.vx*60*dt;p.y+=p.vy*60*dt;p.vy+=.025;
+  if(p.life<=0)particles.splice(i,1);
+ }
+ if(state==="playing"&&((boss&&boss.hp<=0)||(!boss&&bricks.every(b=>b.hp<=0))))completeStage();
+ updateHud();
+}
+function drawBackground(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#101a35");g.addColorStop(.52,"#091326");g.addColorStop(1,"#050914");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.save();for(const s of stars){ctx.globalAlpha=.18+.45*(.5+.5*Math.sin(clock*s.s+s.p));ctx.fillStyle="#9cecf8";ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,TAU);ctx.fill();}ctx.restore();
+ ctx.save();ctx.strokeStyle="#3b82f6";ctx.globalAlpha=.06;ctx.lineWidth=1;
+ for(let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+ for(let y=0;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+ ctx.restore();
+}
+function drawBrick(b){
+ if(b.hp<=0)return;
+ const base=b.type==="bomb"?"#f97316":colors[b.row%colors.length],dark=b.type==="bomb"?"#9a3412":"#1d4ed8";
+ ctx.save();ctx.shadowColor=base;ctx.shadowBlur=7;
+ const g=ctx.createLinearGradient(b.x,b.y,b.x,b.y+b.h);g.addColorStop(0,base);g.addColorStop(1,dark);ctx.fillStyle=g;rounded(b.x,b.y,b.w,b.h,5);ctx.fill();
+ ctx.shadowBlur=0;ctx.strokeStyle="#ffffff55";ctx.lineWidth=1;rounded(b.x+.5,b.y+.5,b.w-1,b.h-1,5);ctx.stroke();
+ ctx.fillStyle="#ffffff30";rounded(b.x+4,b.y+3,b.w-8,3,2);ctx.fill();
+ if(b.hp>1){ctx.fillStyle="#07101f";ctx.globalAlpha=.7;rounded(b.x+b.w/2-8,b.y+b.h/2-6,16,12,4);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle="#fff";ctx.font="900 10px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(b.hp),b.x+b.w/2,b.y+b.h/2);}
+ if(b.type==="bomb"){ctx.fillStyle="#fff7ed";ctx.font="900 13px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("✦",b.x+b.w/2,b.y+b.h/2);}
+ ctx.restore();
+}
+function drawBoss(){
+ if(!boss||boss.hp<=0)return;
+ boss.x=clamp(133+Math.sin(clock*1.1+boss.phase)*93,7,W-boss.w-7);
+ const x=boss.x,y=boss.y,w=boss.w,h=boss.h;
+ ctx.save();ctx.shadowColor="#fb7185";ctx.shadowBlur=22;
+ const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"#7c3aed");g.addColorStop(.5,"#be185d");g.addColorStop(1,"#f97316");ctx.fillStyle=g;rounded(x,y,w,h,15);ctx.fill();
+ ctx.shadowBlur=0;ctx.strokeStyle="#fecdd3";ctx.lineWidth=2;rounded(x+2,y+2,w-4,h-4,12);ctx.stroke();
+ ctx.fillStyle="#130d27";rounded(x+17,y+8,w-34,h-16,9);ctx.fill();
+ ctx.fillStyle="#fb7185";ctx.shadowColor="#fb7185";ctx.shadowBlur=10;
+ ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,10,10,0,0,TAU);ctx.fill();
+ ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x+w/2-3,y+h/2-2,3,0,TAU);ctx.fill();
+ ctx.restore();
+}
+function drawPowerDrop(d){
+ const color=d.type==="wide"?"#60a5fa":d.type==="multi"?"#c084fc":d.type==="slow"?"#34d399":d.type==="laser"?"#f87171":"#facc15";
+ ctx.save();ctx.translate(d.x,d.y);ctx.rotate(Math.sin(d.phase)*.12);ctx.shadowColor=color;ctx.shadowBlur=13;
+ const g=ctx.createLinearGradient(-11,-11,11,11);g.addColorStop(0,"#ffffff");g.addColorStop(.3,color);g.addColorStop(1,"#152238");
+ ctx.fillStyle=g;rounded(-11,-11,22,22,7);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle="#ffffffbb";ctx.lineWidth=1.2;rounded(-11,-11,22,22,7);ctx.stroke();
+ ctx.fillStyle="#08111f";ctx.font="1000 13px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(powerLabels[d.type],0,1);ctx.restore();
+}
+function draw(){
+ ctx.save();ctx.clearRect(0,0,W,H);drawBackground();
+ if(shake>0)ctx.translate(rnd(-shake,shake),rnd(-shake,shake));
+ bricks.forEach(drawBrick);drawBoss();
+ for(const d of drops)drawPowerDrop(d);
+ for(const bolt of bolts){ctx.save();ctx.shadowColor="#67e8f9";ctx.shadowBlur=12;ctx.strokeStyle="#e0f2fe";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(bolt.x,bolt.y+12);ctx.lineTo(bolt.x,bolt.y-5);ctx.stroke();ctx.restore();}
+ for(const b of balls){
+  b.trail.forEach((t,i)=>{ctx.globalAlpha=(i+1)/b.trail.length*.28;ctx.fillStyle="#67e8f9";ctx.beginPath();ctx.arc(t.x,t.y,b.r*(i+1)/b.trail.length,0,TAU);ctx.fill();});ctx.globalAlpha=1;
+  ctx.save();ctx.shadowColor="#e0f2fe";ctx.shadowBlur=18;const g=ctx.createRadialGradient(b.x-2,b.y-3,1,b.x,b.y,b.r+2);g.addColorStop(0,"#fff");g.addColorStop(.55,"#dbeafe");g.addColorStop(1,"#67e8f9");ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill();ctx.restore();
+ }
+ if(power.shield>0){ctx.save();ctx.shadowColor="#facc15";ctx.shadowBlur=18;ctx.strokeStyle="#fde68a";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(12,H-12);ctx.lineTo(W-12,H-12);ctx.stroke();ctx.restore();}
+ ctx.save();const pg=ctx.createLinearGradient(paddle.x,paddle.y,paddle.x,paddle.y+paddle.h);pg.addColorStop(0,power.laser>0?"#fecdd3":"#e0f2fe");pg.addColorStop(.4,power.laser>0?"#fb7185":"#38bdf8");pg.addColorStop(1,power.laser>0?"#9f1239":"#1d4ed8");ctx.fillStyle=pg;ctx.shadowColor=power.laser>0?"#fb7185":"#38bdf8";ctx.shadowBlur=14;rounded(paddle.x,paddle.y,paddle.w,paddle.h,6);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle="#ffffffab";rounded(paddle.x+9,paddle.y+2,paddle.w-18,2.5,2);ctx.fill();if(power.laser>0){ctx.fillStyle="#fecdd3";ctx.beginPath();ctx.arc(paddle.x+paddle.w*.29,paddle.y+3,3,0,TAU);ctx.arc(paddle.x+paddle.w*.71,paddle.y+3,3,0,TAU);ctx.fill();}ctx.restore();
+ ctx.save();ctx.globalCompositeOperation="lighter";for(const p of particles){const a=clamp(p.life/p.max,0,1);ctx.globalAlpha=a;ctx.fillStyle=p.color;if(p.text){ctx.font="1000 13px system-ui";ctx.textAlign="center";ctx.fillText(p.text,p.x,p.y);}else{ctx.beginPath();ctx.arc(p.x,p.y,p.size*a,0,TAU);ctx.fill();}}ctx.restore();ctx.globalAlpha=1;
+ if(flash>0){ctx.save();ctx.globalAlpha=Math.min(.45,flash*1.3);ctx.fillStyle="#e0f2fe";ctx.fillRect(0,0,W,H);ctx.restore();}
+ if(state==="ready"||state==="paused"||state==="stageClear"||state==="over"||state==="won"){
+  ctx.save();ctx.fillStyle="rgba(2,6,18,.6)";ctx.fillRect(0,0,W,H);
+  let title="",sub="",col="#f8fafc";
+  if(state==="ready"){title="TAP TO LAUNCH";sub="タップ / 発射ボタン";col="#a5f3fc";}
+  if(state==="paused"){title="PAUSED";sub="再開ボタンで続きから";col="#c4b5fd";}
+  if(state==="stageClear"){title="STAGE CLEAR!";sub="次のステージへ…";col="#fde68a";}
+  if(state==="over"){title="GAME OVER";sub="「最初から」で再挑戦";col="#fda4af";}
+  if(state==="won"){title="ALL CLEAR!";sub="全10ステージ制覇！";col="#86efac";}
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor=col;ctx.shadowBlur=20;ctx.fillStyle=col;ctx.font="1000 28px system-ui";ctx.fillText(title,W/2,H/2-13);ctx.shadowBlur=0;ctx.fillStyle="#e2e8f0";ctx.font="800 14px system-ui";ctx.fillText(sub,W/2,H/2+22);ctx.restore();
+ }
+ ctx.restore();
+}
+function loop(ts){
+ const dt=lastFrame?Math.min(.035,(ts-lastFrame)/1000):.016;lastFrame=ts;
+ update(dt);draw();raf=requestAnimationFrame(loop);
+}
+function setMode(next){
+ mode=next;document.getElementById("stageMode").classList.toggle("active",mode==="stage");document.getElementById("endlessMode").classList.toggle("active",mode==="endless");
+ restartGame();
+}
+document.getElementById("stageMode").addEventListener("click",()=>setMode("stage"));
+document.getElementById("endlessMode").addEventListener("click",()=>setMode("endless"));
+c.addEventListener("pointerdown",e=>{movePaddleTo(e.clientX);if(state==="ready")launch();});
+c.addEventListener("pointermove",e=>{if(e.pointerType==="touch"||e.buttons>0)movePaddleTo(e.clientX);});
+document.getElementById("launch").addEventListener("click",launch);
+document.getElementById("pause").addEventListener("click",()=>{
+ if(state==="playing"||state==="ready"){previousState=state;state="paused";pauseBtn.textContent="▶ 再開";setInfo("一時停止中");}
+ else if(state==="paused"){state=previousState;pauseBtn.textContent="⏸ 一時停止";setInfo(state==="ready"?"タップして発射！":"再開！");}
+});
+document.getElementById("sound").addEventListener("click",()=>{sfxOn=!sfxOn;soundBtn.textContent=sfxOn?"🔊 サウンド ON":"🔇 サウンド OFF";if(sfxOn)beep(520,.08,"sine",.02);});
+function holdButton(id,value){
+ const el=document.getElementById(id);
+ const down=e=>{e.preventDefault();dir=value;try{el.setPointerCapture(e.pointerId);}catch(err){}};
+ const up=e=>{e.preventDefault();if(dir===value)dir=0;};
+ el.addEventListener("pointerdown",down);el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);el.addEventListener("lostpointercapture",up);
+}
+holdButton("left",-1);holdButton("right",1);
+window.addEventListener("keydown",e=>{
+ if(["ArrowLeft","ArrowRight"," ","a","A","d","D"].includes(e.key))e.preventDefault();
+ keys[e.key]=true;
+ if(e.key===" "||e.key==="Enter")launch();
+ if(e.key==="Escape"||e.key==="p"||e.key==="P")pauseBtn.click();
+});
+window.addEventListener("keyup",e=>{keys[e.key]=false;});
+window.addEventListener("blur",()=>{keys={};dir=0;});
+if(window.GameKit)GameKit.mount({title:"🧱 ブリックブレイク+",intro:"ボールを返してブロックを壊し、パワーアップで連鎖を狙おう。",howto:"画面をタップしてボールを発射。画面を指で左右にスライドするか、下の◀▶ボタンでバーを操作します。ボールを落とすとライフが減り、3回でゲームオーバー。ブロックから落ちるパワーアップはバーでキャッチしましょう。W=バー拡大、M=マルチボール、S=スロー、L=自動レーザー、+=シールド。ステージ攻略は全10面、5面と10面はボス戦です。",onStart:restartGame,onRestart:restartGame});
+restartGame();raf=requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
