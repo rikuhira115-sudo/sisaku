@@ -54,10 +54,9 @@ h1{font-size:clamp(28px,8vw,39px);line-height:1.05;margin:0;letter-spacing:.035e
 <main id="game" aria-label="PIXEL CLIMBER ゲーム">
 <canvas id="world" aria-label="足場を登るゲーム画面"></canvas>
 <div class="hud">
-  <div class="scorebox"><div class="kicker">SCORE</div><div class="score" id="score">0</div></div>
+  <div class="scorebox"><div class="kicker">HEIGHT</div><div class="score" id="height">0 m</div></div>
   <div class="hudright">
-    <div class="statpill"><strong id="best">0</strong><span>BEST</span></div>
-    <div class="statpill"><strong id="height">0 m</strong><span>HEIGHT</span></div>
+    <div class="statpill"><strong id="best">0 m</strong><span>BEST HEIGHT</span></div>
     <button class="iconbtn" id="pauseBtn" aria-label="一時停止">Ⅱ</button>
     <button class="iconbtn" id="restartBtn" aria-label="最初から">↻</button>
   </div>
@@ -68,14 +67,14 @@ h1{font-size:clamp(28px,8vw,39px);line-height:1.05;margin:0;letter-spacing:.035e
     <div class="logoicon">🧗</div>
     <h1>PIXEL<br>CLIMBER</h1>
     <div class="subtitle">終わらない塔を、どこまでも。</div>
-    <p class="lead">小さな登頂者を操作して、足場から足場へ飛び移ろう。高く登るほどスコアが伸びる。目指せ自己ベスト！</p>
+    <p class="lead">引っ張って飛び、足場に着地して、できるだけ高く登ろう。競うのは到達高度だけ！</p>
     <div class="instructions">
       <div class="instruction"><b>1</b><span>どこからでも<br>ドラッグ</span></div>
       <div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div>
       <div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div>
     </div>
     <button class="primary" id="mainBtn">のぼり始める</button>
-    <p class="smallnote">足場に着地すると得点。画面の下へ落ちると終了。<br>操作の微調整で、記録を更新しよう。</p>
+    <p class="smallnote">画面の下へ落ちたら終了。記録は到達した高さだけ。<br>狙いを少しずつ調整して、もっと上へ。</p>
   </section>
 </div>
 </main>
@@ -87,7 +86,6 @@ const ctx=canvas.getContext("2d",{alpha:false});
 const gameEl=document.getElementById("game");
 const overlay=document.getElementById("overlay");
 const panel=document.getElementById("panel");
-const scoreEl=document.getElementById("score");
 const bestEl=document.getElementById("best");
 const heightEl=document.getElementById("height");
 const hintEl=document.getElementById("hint");
@@ -98,10 +96,9 @@ let W=360,H=760,dpr=1,initialized=false;
 let state="ready";
 let player,platforms=[],particles=[];
 let cameraY=0,baseY=0,nextId=1,nextPlatformY=0;
-let score=0,combo=0,maxCombo=0,landings=0,runHeight=0;
-let bestScore=readNum("pixelClimberBest",0);
+let runHeight=0,nextMilestone=100;
 let bestHeight=readNum("pixelClimberBestHeight",0);
-let runStartBest=bestScore,runStartBestHeight=bestHeight;
+let runStartBestHeight=bestHeight;
 let lastLaunchPlatformId=null;
 let drag={active:false,startX:0,startY:0,x:0,y:0,pointerId:null};
 let notice="",noticeTime=0,flash=0,lastTime=0;
@@ -110,7 +107,7 @@ const GRAVITY=1120;
 const MAX_PULL=116;
 const MAX_SPEED=690;
 const MIN_PULL=13;
-const PLAYER_R=10;
+const PLAYER_R=13;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rand=(a,b)=>a+Math.random()*(b-a);
 function readNum(key,fallback){try{const v=Number(localStorage.getItem(key));return Number.isFinite(v)&&v>=0?v:fallback}catch(e){return fallback}}
@@ -140,33 +137,29 @@ function generatePlatforms(){
   let minY=Infinity;
   platforms.forEach(p=>{if(p.y<minY)minY=p.y});
   const threshold=cameraY-H*1.25;
-  const climbed=Math.max(0,baseY-minY);
+  let climbed=Math.max(0,baseY-minY);
   while(minY>threshold){
-    const spacing=rand(74,96);
-    nextPlatformY=minY-spacing;
-    const difficulty=clamp(climbed/4200,0,1);
-    const previous=platforms.reduce((a,p)=>p.y===minY?p:a,platforms[0]);
-    const w=clamp(rand(122-36*difficulty,145-48*difficulty),62,145);
+    const difficulty=clamp(climbed/5200,0,1);
+    const spacing=rand(72+4*difficulty,88+10*difficulty);
+    const platformY=minY-spacing;
+    const previous=platforms.reduce((a,p)=>p.y<a.y?p:a,platforms[0]);
+    const w=clamp(rand(148-32*difficulty,168-40*difficulty),90,Math.min(168,W-18));
     const margin=w/2+9;
-    const maxDelta=Math.min(112,W*.31);
+    const maxDelta=Math.min(90,W*.28);
     let x=clamp(previous.x+rand(-maxDelta,maxDelta),margin,W-margin);
     if(Math.abs(x-previous.x)<28){
-      const dir=Math.random()<.5?-1:1;
-      x=clamp(previous.x+dir*rand(34,66),margin,W-margin);
+      const dir=previous.x>W*.5?-1:1;
+      x=clamp(previous.x+dir*rand(34,58),margin,W-margin);
+      if(Math.abs(x-previous.x)<20)x=clamp(previous.x-dir*rand(34,58),margin,W-margin);
     }
-    let type="stone";
-    const n=(platforms.length+1);
-    if(n%8===0)type="gold";
-    else if(difficulty>.35&&n%5===0)type="narrow";
-    const p=newPlatform(x,nextPlatformY,w,type);
-    if(difficulty>.62&&n%9===0){p.type="moving";p.moveAmp=Math.min(26,W*.07);p.moveSpeed=rand(.6,1.0)}
-    platforms.push(p);
-    minY=nextPlatformY;
+    platforms.push(newPlatform(x,platformY,w,"stone"));
+    minY=platformY;
+    climbed=Math.max(0,baseY-minY);
   }
 }
 function resetRun(){
-  runStartBest=bestScore;runStartBestHeight=bestHeight;
-  score=0;combo=0;maxCombo=0;landings=0;runHeight=0;
+  runStartBestHeight=bestHeight;
+  runHeight=0;nextMilestone=100;
   nextId=1;platforms=[];particles=[];cameraY=0;notice="";noticeTime=0;flash=0;
   drag.active=false;lastLaunchPlatformId=null;
   baseY=H-92;
@@ -181,19 +174,19 @@ function resetRun(){
   pauseBtn.textContent="Ⅱ";pauseBtn.setAttribute("aria-label","一時停止");
   hintEl.style.opacity="1";
   updateHUD();
-  notice="LET'S CLIMB!";noticeTime=1;
+  notice="登頂開始";noticeTime=.8;
   lastTime=performance.now();
 }
 function showTitle(){
   state="ready";overlay.classList.remove("hidden");
-  panel.innerHTML='<div class="logoicon">🧗</div><h1>PIXEL<br>CLIMBER</h1><div class="subtitle">終わらない塔を、どこまでも。</div><p class="lead">小さな登頂者を操作して、足場から足場へ飛び移ろう。高く登るほどスコアが伸びる。目指せ自己ベスト！</p><div class="instructions"><div class="instruction"><b>1</b><span>どこからでも<br>ドラッグ</span></div><div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div><div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div></div><button class="primary" id="mainBtn">のぼり始める</button><p class="smallnote">足場に着地すると得点。画面の下へ落ちると終了。<br>操作の微調整で、記録を更新しよう。</p>';
+  panel.innerHTML='<div class="logoicon">🧗</div><h1>PIXEL<br>CLIMBER</h1><div class="subtitle">終わらない塔を、どこまでも。</div><p class="lead">引っ張って飛び、足場に着地して、できるだけ高く登ろう。競うのは到達高度だけ！</p><div class="instructions"><div class="instruction"><b>1</b><span>好きな場所から<br>ドラッグ</span></div><div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div><div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div></div><button class="primary" id="mainBtn">のぼり始める</button><p class="smallnote">画面の下へ落ちたら終了。記録は到達した高さだけ。<br>狙いを少しずつ調整して、もっと上へ。</p>';
   document.getElementById("mainBtn").addEventListener("click",resetRun);
   hintEl.style.opacity="0";pauseBtn.textContent="Ⅱ";
 }
 function showPause(){
   if(state!=="playing")return;
   state="paused";drag.active=false;
-  panel.innerHTML='<div class="logoicon">⏸</div><h1 style="font-size:30px">ひと休み</h1><div class="subtitle">PAUSED</div><p class="lead">今の記録はそのまま。準備ができたら再開しよう。</p><div class="resultgrid"><div class="result"><span>CURRENT SCORE</span><strong>'+score.toLocaleString("ja-JP")+'</strong></div><div class="result"><span>HEIGHT</span><strong>'+Math.floor(runHeight)+' m</strong></div></div><button class="primary" id="continueBtn">続ける</button><button class="secondary" id="restartOverlayBtn">最初から</button>';
+  panel.innerHTML='<div class="logoicon">⏸</div><h1 style="font-size:30px">ひと休み</h1><div class="subtitle">PAUSED</div><p class="lead">今の記録はそのまま。準備ができたら再開しよう。</p><div class="resultgrid"><div class="result"><span>THIS RUN</span><strong>'+Math.floor(runHeight)+' m</strong></div><div class="result"><span>BEST HEIGHT</span><strong>'+bestHeight+' m</strong></div></div><button class="primary" id="continueBtn">続ける</button><button class="secondary" id="restartOverlayBtn">最初から</button>';
   overlay.classList.remove("hidden");hintEl.style.opacity="0";pauseBtn.textContent="▶";
   document.getElementById("continueBtn").addEventListener("click",()=>{state="playing";overlay.classList.add("hidden");hintEl.style.opacity="1";pauseBtn.textContent="Ⅱ";lastTime=performance.now()});
   document.getElementById("restartOverlayBtn").addEventListener("click",resetRun);
@@ -201,11 +194,11 @@ function showPause(){
 function gameOver(){
   if(state==="over")return;
   state="over";drag.active=false;
-  const isNew=score>runStartBest||runHeight>runStartBestHeight;
-  if(score>bestScore){bestScore=score;writeNum("pixelClimberBest",bestScore)}
-  if(runHeight>bestHeight){bestHeight=Math.floor(runHeight);writeNum("pixelClimberBestHeight",bestHeight)}
+  const finalHeight=Math.floor(runHeight);
+  const isNew=finalHeight>runStartBestHeight;
+  if(finalHeight>bestHeight){bestHeight=finalHeight;writeNum("pixelClimberBestHeight",bestHeight)}
   updateHUD();
-  panel.innerHTML='<div class="logoicon">🏁</div><h1 style="font-size:30px">登頂記録</h1><div class="subtitle">RUN ENDED</div><p class="lead">'+(isNew?"新しい記録を刻んだ！":"次はもっと上へ。")+'</p><div class="resultgrid"><div class="result"><span>SCORE</span><strong>'+score.toLocaleString("ja-JP")+'</strong></div><div class="result"><span>BEST SCORE</span><strong>'+bestScore.toLocaleString("ja-JP")+'</strong></div><div class="result"><span>HEIGHT</span><strong>'+Math.floor(runHeight)+' m</strong></div><div class="result"><span>MAX COMBO</span><strong>'+maxCombo+'</strong></div><div class="result"><span>LANDINGS</span><strong>'+landings+'</strong></div><div class="result"><span>BEST HEIGHT</span><strong>'+bestHeight+' m</strong></div></div><button class="primary" id="mainBtn">もう一度登る</button><button class="secondary" id="titleBtn">タイトルに戻る</button><p class="smallnote">操作を少し変えて、自己ベストを更新しよう。</p>';
+  panel.innerHTML='<div class="logoicon">🏁</div><h1 style="font-size:30px">今回の登頂記録</h1><div class="subtitle">'+(isNew?"NEW HEIGHT RECORD":"RUN ENDED")+'</div><p class="lead">'+(isNew?"自己ベスト更新！ さらに上を目指そう。":"もう一度挑戦して、もっと高く。")+'</p><div class="resultgrid"><div class="result"><span>THIS RUN</span><strong>'+finalHeight+' m</strong></div><div class="result"><span>BEST HEIGHT</span><strong>'+bestHeight+' m</strong></div></div><button class="primary" id="mainBtn">もう一度登る</button><button class="secondary" id="titleBtn">タイトルに戻る</button><p class="smallnote">競うのはひとつだけ。どこまで高く登れるか。</p>';
   overlay.classList.remove("hidden");hintEl.style.opacity="0";
   document.getElementById("mainBtn").addEventListener("click",resetRun);
   document.getElementById("titleBtn").addEventListener("click",showTitle);
@@ -219,14 +212,14 @@ function launch(){
   const d=Math.min(dist,MAX_PULL);
   const nx=-dx/dist,ny=-dy/dist;
   const power=clamp(d/MAX_PULL,0,1);
-  const speed=100+(MAX_SPEED-100)*Math.pow(power,.78);
+  const speed=120+(MAX_SPEED-120)*Math.pow(power,1.12);
   player.vx=nx*speed;player.vy=ny*speed;
   player.airborne=true;
   lastLaunchPlatformId=player.platformId;
   player.platformId=null;
   player.angle=Math.atan2(player.vy,player.vx);
   spawnParticles(player.x,player.y,8,"launch");
-  notice=power>.82?"FULL POWER!":"";noticeTime=.65;
+  notice="";noticeTime=0;
 }
 function localPoint(e){
   const r=canvas.getBoundingClientRect();
@@ -254,9 +247,8 @@ pauseBtn.addEventListener("click",()=>{if(state==="playing")showPause();else if(
 restartBtn.addEventListener("click",()=>{if(state==="ready")resetRun();else resetRun()});
 mainBtn.addEventListener("click",resetRun);
 function updateHUD(){
-  scoreEl.textContent=score.toLocaleString("ja-JP");
-  bestEl.textContent=bestScore.toLocaleString("ja-JP");
   heightEl.textContent=Math.floor(runHeight)+" m";
+  bestEl.textContent=bestHeight+" m";
 }
 function spawnParticles(x,y,count,kind){
   for(let i=0;i<count;i++){
@@ -267,23 +259,9 @@ function spawnParticles(x,y,count,kind){
 }
 function landOn(p){
   player.y=p.y-player.r;player.vy=0;player.vx=0;player.airborne=false;player.platformId=p.id;player.angle=0;
-  spawnParticles(player.x,p.y-2,p.type==="gold"?15:8,p.type==="gold"?"gold":"land");
-  flash=.14;
-  if(p.id===lastLaunchPlatformId){
-    combo=0;notice="SAFE LANDING";noticeTime=.7;
-  }else{
-    combo++;landings++;maxCombo=Math.max(maxCombo,combo);
-    let points=100;
-    if(p.type==="gold"){points+=150;notice="GOLD PLATFORM!";noticeTime=1}
-    else if(p.w<82){points+=75;notice="NARROW LANDING!";noticeTime=.8}
-    else {notice=combo>1?"COMBO x"+combo:"+100";noticeTime=.58}
-    const centered=Math.abs(player.x-p.x)<p.w*.16;
-    if(centered){points+=50;if(p.type!=="gold"){notice="PERFECT LANDING!";noticeTime=.8}}
-    const multiplier=1+Math.min(8,combo-1)*.2;
-    score+=Math.round(points*multiplier);
-    if(score>bestScore){bestScore=score;writeNum("pixelClimberBest",bestScore)}
-    updateHUD();
-  }
+  spawnParticles(player.x,p.y-2,8,"land");
+  flash=.12;
+  notice="";noticeTime=0;
 }
 function update(dt){
   if(state!=="playing")return;
@@ -309,10 +287,17 @@ function update(dt){
   }
   const desiredCamera=player.y-H*.62;
   if(desiredCamera<cameraY)cameraY=desiredCamera;
-  runHeight=Math.max(runHeight,(baseY-player.y)/10,0);
-  if(runHeight>bestHeight){bestHeight=Math.floor(runHeight);writeNum("pixelClimberBestHeight",bestHeight)}
-  const time=performance.now()/1000;
-  platforms.forEach(p=>{if(p.type==="moving")p.x=clamp(p.originX+Math.sin(time*p.moveSpeed+p.phase)*p.moveAmp,p.w/2+6,W-p.w/2-6)});
+  runHeight=Math.max(runHeight,(baseY-PLAYER_R-player.y)/10,0);
+  if(Math.floor(runHeight)>bestHeight){
+    bestHeight=Math.floor(runHeight);
+    writeNum("pixelClimberBestHeight",bestHeight);
+  }
+  while(runHeight>=nextMilestone){
+    notice=nextMilestone+" m";
+    noticeTime=1.1;
+    spawnParticles(player.x,player.y,10,"milestone");
+    nextMilestone+=100;
+  }
   generatePlatforms();
   platforms=platforms.filter(p=>p.y-cameraY<H+180||p.id===player.platformId||p.id===lastLaunchPlatformId);
   particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=260*dt;p.life-=dt});
@@ -324,7 +309,7 @@ function update(dt){
 function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h))}
 function hash(n){const v=Math.sin(n*127.1+bgSeed*311.7)*43758.5453;return v-Math.floor(v)}
 function drawBackground(){
-  const climbed=Math.max(0,baseY-(player?player.y:baseY));
+  const climbed=runHeight*10;
   let top,bottom;
   if(climbed<700){top="#101d35";bottom="#253c55"}
   else if(climbed<1900){top="#242548";bottom="#53668b"}
@@ -343,14 +328,12 @@ function drawBackground(){
     for(let s=0;s<2;s++){
       const side=s===0?0:W*.78;
       const towerW=W*.22;
-      rect(side,baseLine, towerW,H-baseLine,"#111b2c");
+      rect(side,baseLine,towerW,H-baseLine,"#111b2c");
       for(let yy=baseLine+12;yy<H;yy+=24){
         rect(side+3,yy,towerW-6,2,"#24354a");
         rect(side+towerW*.52,yy+2,3,8,"#1a2940");
       }
-      for(let yy=baseLine+8;yy<H;yy+=37){
-        rect(side+towerW*.24,yy,5,7,"#25384d");
-      }
+      for(let yy=baseLine+8;yy<H;yy+=37)rect(side+towerW*.24,yy,5,7,"#25384d");
     }
   }else if(climbed<2100){
     for(let i=0;i<5;i++){
@@ -369,23 +352,14 @@ function drawPlatform(p){
   const sy=p.y-cameraY;
   if(sy<-30||sy>H+40)return;
   const x=p.x-p.w/2;
-  let fill="#526a82",top="#a5c1d5",edge="#2d4057";
-  if(p.type==="gold"){fill="#9a6c30";top="#ffe08a";edge="#5c3b22"}
-  if(p.type==="narrow"){fill="#4a5979";top="#c0b9f8";edge="#282c55"}
-  if(p.type==="moving"){fill="#385f70";top="#8ee8ed";edge="#203d51"}
-  if(p.type==="start"){fill="#536e88";top="#c0d6e6";edge="#263c54"}
+  const fill=p.type==="start"?"#536e88":"#526a82";
+  const top=p.type==="start"?"#c0d6e6":"#a5c1d5";
+  const edge="#2d4057";
   rect(x,sy,p.w,12,edge);
   rect(x+2,sy+2,p.w-4,9,fill);
   rect(x,sy,p.w,3,top);
-  for(let xx=x+9;xx<x+p.w-5;xx+=18){
-    rect(xx,sy+5,4,2,edge);
-  }
+  for(let xx=x+9;xx<x+p.w-5;xx+=18)rect(xx,sy+5,4,2,edge);
   rect(x+5,sy+12,Math.max(0,p.w-10),2,"#111b2c88");
-  if(p.type==="gold"){
-    rect(p.x-3,sy-5,6,4,"#fff0b0");rect(p.x-1,sy-8,2,3,"#fff0b0");
-  }else if(p.type==="moving"){
-    rect(x+5,sy-4,6,2,"#98f8ff");rect(x+p.w-11,sy-4,6,2,"#98f8ff");
-  }
 }
 function drawHero(){
   const x=Math.round(player.x),y=Math.round(player.y-cameraY);
@@ -422,26 +396,18 @@ function drawAim(){
   const sx=player.x,sy=player.y-cameraY;
   const len=30+(d/MAX_PULL)*53;
   const ex=sx+nx*len,ey=sy+ny*len;
-  const power=clamp(d/MAX_PULL,0,1);
-  const col=power>.82?"#ff8a72":power>.52?"#ffd76d":"#91f1d5";
-  ctx.strokeStyle=col;ctx.lineWidth=3;ctx.lineCap="square";
+  ctx.strokeStyle="#f6d46f";ctx.lineWidth=3;ctx.lineCap="square";
   ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
   const a=Math.atan2(ey-sy,ex-sx),head=9;
   ctx.beginPath();ctx.moveTo(ex,ey);
   ctx.lineTo(ex-head*Math.cos(a-.58),ey-head*Math.sin(a-.58));
   ctx.moveTo(ex,ey);ctx.lineTo(ex-head*Math.cos(a+.58),ey-head*Math.sin(a+.58));ctx.stroke();
   rect(sx-2,sy-2,4,4,"#ffffff");
-  // short power ticks; no predicted flight path
-  const ticks=5,active=Math.round(power*ticks);
-  for(let i=0;i<ticks;i++){
-    const bx=sx-22+i*10,by=sy+23;
-    rect(bx,by,7,3,i<active?col:"#ffffff44");
-  }
 }
 function drawParticles(){
   for(const p of particles){
     ctx.globalAlpha=clamp(p.life/p.max,0,1);
-    const col=p.kind==="gold"?"#ffdf75":p.kind==="launch"?"#a1e8ff":"#eaf7ff";
+    const col=p.kind==="launch"?"#a1e8ff":"#eaf7ff";
     rect(p.x,p.y-cameraY,p.size,p.size,col);
   }
   ctx.globalAlpha=1;
@@ -452,7 +418,7 @@ function drawNotice(){
   ctx.globalAlpha=alpha;ctx.textAlign="center";ctx.textBaseline="middle";
   ctx.font="900 16px system-ui, sans-serif";
   ctx.fillStyle="#10182b";ctx.fillText(notice,W/2+2,H*.23+2);
-  ctx.fillStyle=notice.indexOf("GOLD")>=0||notice.indexOf("PERFECT")>=0?"#ffdf78":"#f4f7ff";
+  ctx.fillStyle=notice.indexOf(" m")>=0?"#ffdf78":"#f4f7ff";
   ctx.fillText(notice,W/2,H*.23);
   ctx.globalAlpha=1;
 }
@@ -479,7 +445,7 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 function init(){
-  setCanvasSize();initialized=true;bestEl.textContent=bestScore.toLocaleString("ja-JP");
+  setCanvasSize();initialized=true;bestEl.textContent=bestHeight+" m";
   requestAnimationFrame(t=>{lastTime=t;requestAnimationFrame(frame)});
 }
 window.addEventListener("resize",setCanvasSize,{passive:true});
