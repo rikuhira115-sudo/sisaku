@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#080d1b">
+<title>PIXEL CLIMBER | ゲーム王国</title>
+<style>
+:root{color-scheme:dark;--ink:#f6f7ff;--muted:#a3b1cb;--gold:#ffd56e;--blue:#71d5ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#080d1b;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{overscroll-behavior:none;touch-action:none}
+#game{position:relative;width:100%;height:100%;height:100dvh;max-width:620px;margin:0 auto;overflow:hidden;background:#0b1425;isolation:isolate}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;image-rendering:pixelated}
+.hud{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 10px);left:12px;right:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none;text-shadow:0 2px 0 #101525}
+.scorebox{min-width:0;display:flex;flex-direction:column;gap:2px}
+.kicker{font-size:10px;font-weight:900;letter-spacing:.16em;color:#9eafcc}
+.score{font-size:clamp(25px,7vw,34px);font-weight:1000;line-height:1.08;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+.hudright{display:flex;align-items:flex-start;gap:7px;pointer-events:auto}
+.statpill{border:1px solid #42536d;background:#101a2bcc;border-radius:12px;padding:7px 9px;min-width:68px;text-align:right}
+.statpill strong{display:block;font-size:14px;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--gold)}
+.statpill span{display:block;font-size:9px;font-weight:900;letter-spacing:.12em;color:#9eafcc;margin-top:3px}
+.iconbtn{width:38px;height:38px;display:grid;place-items:center;background:#101a2bcc;color:#f6f7ff;border:1px solid #42536d;border-radius:12px;font-size:17px;font-weight:900;touch-action:manipulation}
+.iconbtn:active{transform:scale(.94)}
+.bottomhint{position:absolute;z-index:2;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);text-align:center;color:#d7e4fa;font-size:12px;font-weight:800;text-shadow:0 2px 3px #000;pointer-events:none;transition:opacity .2s}
+.bottomhint span{display:inline-block;padding:8px 12px;border:1px solid #42536d99;border-radius:999px;background:#0b1425b5}
+.overlay{position:absolute;z-index:5;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(180deg,#060a14bf,#080e1beF);backdrop-filter:blur(5px)}
+.overlay.hidden{display:none}
+.panel{width:min(100%,390px);max-height:calc(100% - 20px);overflow:auto;text-align:center;border:1px solid #34465f;border-radius:24px;padding:23px 19px 20px;background:linear-gradient(155deg,#1b2b45f7,#0a1120f7);box-shadow:0 20px 70px #0009}
+.logoicon{font-size:35px;line-height:1;margin-bottom:9px;filter:drop-shadow(0 5px 0 #17213a)}
+h1{font-size:clamp(28px,8vw,39px);line-height:1.05;margin:0;letter-spacing:.035em;font-weight:1000}
+.subtitle{color:var(--gold);font-size:12px;font-weight:900;letter-spacing:.08em;margin:9px 0 15px}
+.lead{font-size:13px;line-height:1.75;color:#c0cde0;margin:0 auto 16px;max-width:315px}
+.instructions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0 18px;text-align:center}
+.instruction{border:1px solid #34465f;background:#111c2f;border-radius:13px;padding:10px 5px 9px}
+.instruction b{display:block;color:#fff;font-size:17px;margin-bottom:4px}
+.instruction span{display:block;font-size:10px;color:#aebbd0;line-height:1.4}
+.primary,.secondary{display:block;width:100%;min-height:49px;border-radius:14px;border:0;font-weight:1000;font-size:15px;touch-action:manipulation}
+.primary{background:linear-gradient(180deg,#ffe28a,#f5b83d);color:#231a0a;box-shadow:0 4px 0 #a66a1f}
+.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #a66a1f}
+.secondary{margin-top:10px;background:#1a2940;color:#dce8fa;border:1px solid #43536e}
+.smallnote{font-size:10px;color:#889bb9;margin:13px 0 0;line-height:1.5}
+.resultgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:18px 0}
+.result{border:1px solid #34465f;border-radius:13px;background:#111c2f;padding:11px 7px}
+.result span{display:block;color:#9eafcc;font-size:10px;font-weight:900;letter-spacing:.08em}
+.result strong{display:block;font-size:22px;line-height:1.35;color:#fff;font-variant-numeric:tabular-nums}
+.newbest{display:none;color:#ffdd7a;font-size:13px;font-weight:1000;margin:8px 0 0}
+.newbest.show{display:block}
+@media(min-width:620px){#game{border-left:1px solid #1e2b41;border-right:1px solid #1e2b41}}
+@media(max-height:650px){.panel{padding:17px 15px}.logoicon{font-size:27px;margin-bottom:5px}.subtitle{margin:6px 0 9px}.lead{margin-bottom:10px}.instructions{margin:10px 0 12px}.instruction{padding:7px 4px}.primary,.secondary{min-height:43px}}
+</style>
+</head>
+<body>
+<main id="game" aria-label="PIXEL CLIMBER ゲーム">
+<canvas id="world" aria-label="足場を登るゲーム画面"></canvas>
+<div class="hud">
+  <div class="scorebox"><div class="kicker">SCORE</div><div class="score" id="score">0</div></div>
+  <div class="hudright">
+    <div class="statpill"><strong id="best">0</strong><span>BEST</span></div>
+    <div class="statpill"><strong id="height">0 m</strong><span>HEIGHT</span></div>
+    <button class="iconbtn" id="pauseBtn" aria-label="一時停止">Ⅱ</button>
+    <button class="iconbtn" id="restartBtn" aria-label="最初から">↻</button>
+  </div>
+</div>
+<div class="bottomhint" id="hint"><span>画面の好きな場所からドラッグして、逆方向へ発射</span></div>
+<div class="overlay" id="overlay">
+  <section class="panel" id="panel">
+    <div class="logoicon">🧗</div>
+    <h1>PIXEL<br>CLIMBER</h1>
+    <div class="subtitle">終わらない塔を、どこまでも。</div>
+    <p class="lead">小さな登頂者を操作して、足場から足場へ飛び移ろう。高く登るほどスコアが伸びる。目指せ自己ベスト！</p>
+    <div class="instructions">
+      <div class="instruction"><b>1</b><span>どこからでも<br>ドラッグ</span></div>
+      <div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div>
+      <div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div>
+    </div>
+    <button class="primary" id="mainBtn">のぼり始める</button>
+    <p class="smallnote">足場に着地すると得点。画面の下へ落ちると終了。<br>操作の微調整で、記録を更新しよう。</p>
+  </section>
+</div>
+</main>
+<script>
+(function(){
+"use strict";
+const canvas=document.getElementById("world");
+const ctx=canvas.getContext("2d",{alpha:false});
+const gameEl=document.getElementById("game");
+const overlay=document.getElementById("overlay");
+const panel=document.getElementById("panel");
+const scoreEl=document.getElementById("score");
+const bestEl=document.getElementById("best");
+const heightEl=document.getElementById("height");
+const hintEl=document.getElementById("hint");
+const mainBtn=document.getElementById("mainBtn");
+const pauseBtn=document.getElementById("pauseBtn");
+const restartBtn=document.getElementById("restartBtn");
+let W=360,H=760,dpr=1,initialized=false;
+let state="ready";
+let player,platforms=[],particles=[];
+let cameraY=0,baseY=0,nextId=1,nextPlatformY=0;
+let score=0,combo=0,maxCombo=0,landings=0,runHeight=0;
+let bestScore=readNum("pixelClimberBest",0);
+let bestHeight=readNum("pixelClimberBestHeight",0);
+let lastLaunchPlatformId=null;
+let drag={active:false,startX:0,startY:0,x:0,y:0,pointerId:null};
+let notice="",noticeTime=0,flash=0,lastTime=0;
+let bgSeed=84;
+const GRAVITY=1120;
+const MAX_PULL=116;
+const MAX_SPEED=690;
+const MIN_PULL=13;
+const PLAYER_R=10;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>a+Math.random()*(b-a);
+function readNum(key,fallback){try{const v=Number(localStorage.getItem(key));return Number.isFinite(v)&&v>=0?v:fallback}catch(e){return fallback}}
+function writeNum(key,value){try{localStorage.setItem(key,String(value))}catch(e){}}
+function setCanvasSize(){
+  const rect=gameEl.getBoundingClientRect();
+  const oldW=W,oldH=H;
+  W=Math.max(280,rect.width);H=Math.max(420,rect.height);
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;
+  if(initialized){
+    const ratio=W/oldW;
+    if(player){player.x=clamp(player.x*ratio,PLAYER_R+5,W-PLAYER_R-5)}
+    platforms.forEach(p=>{p.x=clamp(p.x*ratio,p.w/2+6,W-p.w/2-6)});
+    if(player&&state!=="ready"){
+      const desired=player.y-H*.62;
+      cameraY=Math.min(cameraY,desired);
+    }
+  }
+}
+function newPlatform(x,y,w,type){
+  return {id:nextId++,x:x,y:y,w:w,h:12,type:type||"stone",phase:rand(0,Math.PI*2),moveAmp:0,moveSpeed:0,originX:x};
+}
+function generatePlatforms(){
+  if(!platforms.length)return;
+  let minY=Infinity;
+  platforms.forEach(p=>{if(p.y<minY)minY=p.y});
+  const threshold=cameraY-H*1.25;
+  const climbed=Math.max(0,baseY-minY);
+  while(minY>threshold){
+    const spacing=rand(74,96);
+    nextPlatformY=minY-spacing;
+    const difficulty=clamp(climbed/4200,0,1);
+    const previous=platforms.reduce((a,p)=>p.y===minY?p:a,platforms[0]);
+    const w=clamp(rand(122-36*difficulty,145-48*difficulty),62,145);
+    const margin=w/2+9;
+    const maxDelta=Math.min(112,W*.31);
+    let x=clamp(previous.x+rand(-maxDelta,maxDelta),margin,W-margin);
+    if(Math.abs(x-previous.x)<28){
+      const dir=Math.random()<.5?-1:1;
+      x=clamp(previous.x+dir*rand(34,66),margin,W-margin);
+    }
+    let type="stone";
+    const n=(platforms.length+1);
+    if(n%8===0)type="gold";
+    else if(difficulty>.35&&n%5===0)type="narrow";
+    const p=newPlatform(x,nextPlatformY,w,type);
+    if(difficulty>.62&&n%9===0){p.type="moving";p.moveAmp=Math.min(26,W*.07);p.moveSpeed=rand(.6,1.0)}
+    platforms.push(p);
+    minY=nextPlatformY;
+  }
+}
+function resetRun(){
+  score=0;combo=0;maxCombo=0;landings=0;runHeight=0;
+  nextId=1;platforms=[];particles=[];cameraY=0;notice="";noticeTime=0;flash=0;
+  drag.active=false;lastLaunchPlatformId=null;
+  baseY=H-92;
+  const start=newPlatform(W/2,baseY,Math.min(178,W*.54),"start");
+  platforms.push(start);
+  player={x:start.x,y:start.y-PLAYER_R,vx:0,vy:0,r:PLAYER_R,airborne:false,platformId:start.id,angle:0};
+  cameraY=player.y-H*.62;
+  nextPlatformY=baseY;
+  generatePlatforms();
+  state="playing";
+  overlay.classList.add("hidden");
+  pauseBtn.textContent="Ⅱ";pauseBtn.setAttribute("aria-label","一時停止");
+  hintEl.style.opacity="1";
+  updateHUD();
+  notice="LET'S CLIMB!";noticeTime=1;
+  lastTime=performance.now();
+}
+function showTitle(){
+  state="ready";overlay.classList.remove("hidden");
+  panel.innerHTML='<div class="logoicon">🧗</div><h1>PIXEL<br>CLIMBER</h1><div class="subtitle">終わらない塔を、どこまでも。</div><p class="lead">小さな登頂者を操作して、足場から足場へ飛び移ろう。高く登るほどスコアが伸びる。目指せ自己ベスト！</p><div class="instructions"><div class="instruction"><b>1</b><span>どこからでも<br>ドラッグ</span></div><div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div><div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div></div><button class="primary" id="mainBtn">のぼり始める</button><p class="smallnote">足場に着地すると得点。画面の下へ落ちると終了。<br>操作の微調整で、記録を更新しよう。</p>';
+  document.getElementById("mainBtn").addEventListener("click",resetRun);
+  hintEl.style.opacity="0";pauseBtn.textContent="Ⅱ";
+}
+function showPause(){
+  if(state!=="playing")return;
+  state="paused";drag.active=false;
+  panel.innerHTML='<div class="logoicon">⏸</div><h1 style="font-size:30px">ひと休み</h1><div class="subtitle">PAUSED</div><p class="lead">今の記録はそのまま。準備ができたら再開しよう。</p><div class="resultgrid"><div class="result"><span>CURRENT SCORE</span><strong>'+score.toLocaleString("ja-JP")+'</strong></div><div class="result"><span>HEIGHT</span><strong>'+Math.floor(runHeight)+' m</strong></div></div><button class="primary" id="continueBtn">続ける</button><button class="secondary" id="restartOverlayBtn">最初から</button>';
+  overlay.classList.remove("hidden");hintEl.style.opacity="0";pauseBtn.textContent="▶";
+  document.getElementById("continueBtn").addEventListener("click",()=>{state="playing";overlay.classList.add("hidden");hintEl.style.opacity="1";pauseBtn.textContent="Ⅱ";lastTime=performance.now()});
+  document.getElementById("restartOverlayBtn").addEventListener("click",resetRun);
+}
+function gameOver(){
+  if(state==="over")return;
+  state="over";drag.active=false;
+  const isNew=score>bestScore||runHeight>bestHeight;
+  if(score>bestScore){bestScore=score;writeNum("pixelClimberBest",bestScore)}
+  if(runHeight>bestHeight){bestHeight=Math.floor(runHeight);writeNum("pixelClimberBestHeight",bestHeight)}
+  updateHUD();
+  panel.innerHTML='<div class="logoicon">🏁</div><h1 style="font-size:30px">登頂記録</h1><div class="subtitle">RUN ENDED</div><p class="lead">'+(isNew?"新しい記録を刻んだ！":"次はもっと上へ。")+'</p><div class="resultgrid"><div class="result"><span>SCORE</span><strong>'+score.toLocaleString("ja-JP")+'</strong></div><div class="result"><span>BEST SCORE</span><strong>'+bestScore.toLocaleString("ja-JP")+'</strong></div><div class="result"><span>HEIGHT</span><strong>'+Math.floor(runHeight)+' m</strong></div><div class="result"><span>MAX COMBO</span><strong>'+maxCombo+'</strong></div><div class="result"><span>LANDINGS</span><strong>'+landings+'</strong></div><div class="result"><span>BEST HEIGHT</span><strong>'+bestHeight+' m</strong></div></div><button class="primary" id="mainBtn">もう一度登る</button><button class="secondary" id="titleBtn">タイトルに戻る</button><p class="smallnote">操作を少し変えて、自己ベストを更新しよう。</p>';
+  overlay.classList.remove("hidden");hintEl.style.opacity="0";
+  document.getElementById("mainBtn").addEventListener("click",resetRun);
+  document.getElementById("titleBtn").addEventListener("click",showTitle);
+}
+function launch(){
+  if(state!=="playing"||!player||player.airborne||player.platformId===null)return;
+  const dx=drag.x-drag.startX,dy=drag.y-drag.startY;
+  const dist=Math.hypot(dx,dy);
+  drag.active=false;
+  if(dist<MIN_PULL){return}
+  const d=Math.min(dist,MAX_PULL);
+  const nx=-dx/dist,ny=-dy/dist;
+  const power=clamp(d/MAX_PULL,0,1);
+  const speed=100+(MAX_SPEED-100)*Math.pow(power,.78);
+  player.vx=nx*speed;player.vy=ny*speed;
+  player.airborne=true;
+  lastLaunchPlatformId=player.platformId;
+  player.platformId=null;
+  player.angle=Math.atan2(player.vy,player.vx);
+  spawnParticles(player.x,player.y,8,"launch");
+  notice=power>.82?"FULL POWER!":"";noticeTime=.65;
+}
+function localPoint(e){
+  const r=canvas.getBoundingClientRect();
+  return {x:clamp(e.clientX-r.left,0,W),y:clamp(e.clientY-r.top,0,H)};
+}
+canvas.addEventListener("pointerdown",e=>{
+  if(state!=="playing"||player.airborne||player.platformId===null)return;
+  e.preventDefault();
+  const p=localPoint(e);
+  drag={active:true,startX:p.x,startY:p.y,x:p.x,y:p.y,pointerId:e.pointerId};
+  try{canvas.setPointerCapture(e.pointerId)}catch(err){}
+});
+canvas.addEventListener("pointermove",e=>{
+  if(!drag.active||e.pointerId!==drag.pointerId)return;
+  e.preventDefault();const p=localPoint(e);drag.x=p.x;drag.y=p.y;
+});
+function endDrag(e){
+  if(!drag.active||e.pointerId!==drag.pointerId)return;
+  const p=localPoint(e);drag.x=p.x;drag.y=p.y;launch();
+}
+canvas.addEventListener("pointerup",endDrag);
+canvas.addEventListener("pointercancel",e=>{if(drag.active&&e.pointerId===drag.pointerId)drag.active=false});
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+pauseBtn.addEventListener("click",()=>{if(state==="playing")showPause();else if(state==="paused"){state="playing";overlay.classList.add("hidden");hintEl.style.opacity="1";pauseBtn.textContent="Ⅱ";lastTime=performance.now()}});
+restartBtn.addEventListener("click",()=>{if(state==="ready")resetRun();else resetRun()});
+mainBtn.addEventListener("click",resetRun);
+function updateHUD(){
+  scoreEl.textContent=score.toLocaleString("ja-JP");
+  bestEl.textContent=bestScore.toLocaleString("ja-JP");
+  heightEl.textContent=Math.floor(runHeight)+" m";
+}
+function spawnParticles(x,y,count,kind){
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2;
+    const v=rand(35,170);
+    particles.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-30,life:rand(.25,.65),max:.65,size:kind==="land"?rand(2,5):rand(2,4),kind:kind||"land"});
+  }
+}
+function landOn(p){
+  player.y=p.y-player.r;player.vy=0;player.vx=0;player.airborne=false;player.platformId=p.id;player.angle=0;
+  spawnParticles(player.x,p.y-2,p.type==="gold"?15:8,p.type==="gold"?"gold":"land");
+  flash=.14;
+  if(p.id===lastLaunchPlatformId){
+    combo=0;notice="SAFE LANDING";noticeTime=.7;
+  }else{
+    combo++;landings++;maxCombo=Math.max(maxCombo,combo);
+    let points=100;
+    if(p.type==="gold"){points+=150;notice="GOLD PLATFORM!";noticeTime=1}
+    else if(p.w<82){points+=75;notice="NARROW LANDING!";noticeTime=.8}
+    else {notice=combo>1?"COMBO x"+combo:"+100";noticeTime=.58}
+    const centered=Math.abs(player.x-p.x)<p.w*.16;
+    if(centered){points+=50;if(p.type!=="gold"){notice="PERFECT LANDING!";noticeTime=.8}}
+    const multiplier=1+Math.min(8,combo-1)*.2;
+    score+=Math.round(points*multiplier);
+    if(score>bestScore){bestScore=score;writeNum("pixelClimberBest",bestScore)}
+    updateHUD();
+  }
+}
+function update(dt){
+  if(state!=="playing")return;
+  if(player.airborne){
+    const prevY=player.y;
+    player.vy+=GRAVITY*dt;
+    player.vx*=Math.exp(-.045*dt);
+    player.x+=player.vx*dt;
+    player.y+=player.vy*dt;
+    player.angle=clamp(player.vx*.001,-.35,.35);
+    if(player.x<player.r){player.x=player.r;player.vx=Math.abs(player.vx)*.55}
+    if(player.x>W-player.r){player.x=W-player.r;player.vx=-Math.abs(player.vx)*.55}
+    if(player.vy>0){
+      let landed=null;
+      for(const p of platforms){
+        if(prevY+player.r<=p.y+2&&player.y+player.r>=p.y&&player.x+player.r*.65>=p.x-p.w/2&&player.x-player.r*.65<=p.x+p.w/2){
+          if(!landed||p.y<landed.y)landed=p;
+        }
+      }
+      if(landed)landOn(landed);
+    }
+    if(player.airborne&&player.y-cameraY>H+100){gameOver();return}
+  }
+  const desiredCamera=player.y-H*.62;
+  if(desiredCamera<cameraY)cameraY=desiredCamera;
+  runHeight=Math.max(runHeight,(baseY-player.y)/10,0);
+  if(runHeight>bestHeight){bestHeight=Math.floor(runHeight);writeNum("pixelClimberBestHeight",bestHeight)}
+  const time=performance.now()/1000;
+  platforms.forEach(p=>{if(p.type==="moving")p.x=clamp(p.originX+Math.sin(time*p.moveSpeed+p.phase)*p.moveAmp,p.w/2+6,W-p.w/2-6)});
+  generatePlatforms();
+  platforms=platforms.filter(p=>p.y-cameraY<H+180||p.id===player.platformId||p.id===lastLaunchPlatformId);
+  particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=260*dt;p.life-=dt});
+  particles=particles.filter(p=>p.life>0);
+  if(noticeTime>0)noticeTime-=dt;
+  if(flash>0)flash-=dt;
+  updateHUD();
+}
+function rect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h))}
+function hash(n){const v=Math.sin(n*127.1+bgSeed*311.7)*43758.5453;return v-Math.floor(v)}
+function drawBackground(){
+  const climbed=Math.max(0,baseY-(player?player.y:baseY));
+  let top,bottom;
+  if(climbed<700){top="#101d35";bottom="#253c55"}
+  else if(climbed<1900){top="#242548";bottom="#53668b"}
+  else{top="#090e2e";bottom="#20245b"}
+  const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,top);gr.addColorStop(1,bottom);
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  const band=Math.floor((cameraY+climbed*.15)/110);
+  for(let i=0;i<68;i++){
+    const sx=hash(i*7+band*13)*W;
+    const sy=(hash(i*19+band*5)*H);
+    const tw=hash(i*31)*2.5+1;
+    rect(sx,sy,tw,tw,climbed>1600?"#7a98ed88":"#a9c5e588");
+  }
+  if(climbed<1000){
+    const baseLine=H*.72;
+    for(let s=0;s<2;s++){
+      const side=s===0?0:W*.78;
+      const towerW=W*.22;
+      rect(side,baseLine, towerW,H-baseLine,"#111b2c");
+      for(let yy=baseLine+12;yy<H;yy+=24){
+        rect(side+3,yy,towerW-6,2,"#24354a");
+        rect(side+towerW*.52,yy+2,3,8,"#1a2940");
+      }
+      for(let yy=baseLine+8;yy<H;yy+=37){
+        rect(side+towerW*.24,yy,5,7,"#25384d");
+      }
+    }
+  }else if(climbed<2100){
+    for(let i=0;i<5;i++){
+      const x=hash(i+band*3)*W;
+      const y=hash(i+band*7+55)*H*.8+H*.12;
+      rect(x,y,45,4,"#aab6d533");rect(x+8,y-5,27,5,"#aab6d522");
+    }
+  }else{
+    for(let i=0;i<14;i++){
+      const x=hash(i+band*7+120)*W,y=hash(i+band*11+11)*H;
+      rect(x,y,3,3,"#d1d7ff");rect(x-2,y+1,7,1,"#d1d7ff55");
+    }
+  }
+}
+function drawPlatform(p){
+  const sy=p.y-cameraY;
+  if(sy<-30||sy>H+40)return;
+  const x=p.x-p.w/2;
+  let fill="#526a82",top="#a5c1d5",edge="#2d4057";
+  if(p.type==="gold"){fill="#9a6c30";top="#ffe08a";edge="#5c3b22"}
+  if(p.type==="narrow"){fill="#4a5979";top="#c0b9f8";edge="#282c55"}
+  if(p.type==="moving"){fill="#385f70";top="#8ee8ed";edge="#203d51"}
+  if(p.type==="start"){fill="#536e88";top="#c0d6e6";edge="#263c54"}
+  rect(x,sy,p.w,12,edge);
+  rect(x+2,sy+2,p.w-4,9,fill);
+  rect(x,sy,p.w,3,top);
+  for(let xx=x+9;xx<x+p.w-5;xx+=18){
+    rect(xx,sy+5,4,2,edge);
+  }
+  rect(x+5,sy+12,Math.max(0,p.w-10),2,"#111b2c88");
+  if(p.type==="gold"){
+    rect(p.x-3,sy-5,6,4,"#fff0b0");rect(p.x-1,sy-8,2,3,"#fff0b0");
+  }else if(p.type==="moving"){
+    rect(x+5,sy-4,6,2,"#98f8ff");rect(x+p.w-11,sy-4,6,2,"#98f8ff");
+  }
+}
+function drawHero(){
+  const x=Math.round(player.x),y=Math.round(player.y-cameraY);
+  ctx.save();ctx.translate(x,y);
+  if(player.airborne)ctx.rotate(player.angle*.38);
+  // shadow below the little adventurer
+  rect(-8,10,16,3,"#07101b88");
+  // boots and legs
+  rect(-7,5,5,7,"#332e3d");rect(2,5,5,7,"#332e3d");
+  rect(-8,10,6,3,"#a66b45");rect(2,10,7,3,"#a66b45");
+  // cloak
+  rect(-8,-4,16,11,"#b93f57");rect(-10,-1,3,8,"#87364f");rect(7,-2,3,8,"#87364f");
+  rect(-7,3,14,3,"#dc5b68");
+  // arms
+  rect(-11,-3,4,7,"#d6a27b");rect(7,-4,4,7,"#d6a27b");
+  // face and hair
+  rect(-7,-14,14,12,"#efc49a");rect(-8,-15,16,6,"#47394a");
+  rect(-8,-12,3,6,"#47394a");rect(5,-11,3,5,"#47394a");
+  // eyes
+  rect(-4,-9,2,2,"#242b3b");rect(3,-9,2,2,"#242b3b");
+  // scarf flowing behind movement
+  const sx=player.airborne?(player.vx>=0?-1:1):-1;
+  rect(sx*8,-5,sx*6,3,"#f6c85f");rect(sx*12,-3,sx*4,3,"#e8a84a");
+  // pixel highlight
+  rect(-4,-13,3,2,"#ffe2bc");
+  ctx.restore();
+}
+function drawAim(){
+  if(!drag.active||!player||player.airborne)return;
+  const dx=drag.x-drag.startX,dy=drag.y-drag.startY;
+  const dist=Math.hypot(dx,dy);
+  if(dist<2)return;
+  const d=Math.min(dist,MAX_PULL),nx=-dx/dist,ny=-dy/dist;
+  const sx=player.x,sy=player.y-cameraY;
+  const len=30+(d/MAX_PULL)*53;
+  const ex=sx+nx*len,ey=sy+ny*len;
+  const power=clamp(d/MAX_PULL,0,1);
+  const col=power>.82?"#ff8a72":power>.52?"#ffd76d":"#91f1d5";
+  ctx.strokeStyle=col;ctx.lineWidth=3;ctx.lineCap="square";
+  ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+  const a=Math.atan2(ey-sy,ex-sx),head=9;
+  ctx.beginPath();ctx.moveTo(ex,ey);
+  ctx.lineTo(ex-head*Math.cos(a-.58),ey-head*Math.sin(a-.58));
+  ctx.moveTo(ex,ey);ctx.lineTo(ex-head*Math.cos(a+.58),ey-head*Math.sin(a+.58));ctx.stroke();
+  rect(sx-2,sy-2,4,4,"#ffffff");
+  // short power ticks; no predicted flight path
+  const ticks=5,active=Math.round(power*ticks);
+  for(let i=0;i<ticks;i++){
+    const bx=sx-22+i*10,by=sy+23;
+    rect(bx,by,7,3,i<active?col:"#ffffff44");
+  }
+}
+function drawParticles(){
+  for(const p of particles){
+    ctx.globalAlpha=clamp(p.life/p.max,0,1);
+    const col=p.kind==="gold"?"#ffdf75":p.kind==="launch"?"#a1e8ff":"#eaf7ff";
+    rect(p.x,p.y-cameraY,p.size,p.size,col);
+  }
+  ctx.globalAlpha=1;
+}
+function drawNotice(){
+  if(noticeTime<=0||!notice)return;
+  const alpha=clamp(noticeTime*2,0,1);
+  ctx.globalAlpha=alpha;ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.font="900 16px system-ui, sans-serif";
+  ctx.fillStyle="#10182b";ctx.fillText(notice,W/2+2,H*.23+2);
+  ctx.fillStyle=notice.indexOf("GOLD")>=0||notice.indexOf("PERFECT")>=0?"#ffdf78":"#f4f7ff";
+  ctx.fillText(notice,W/2,H*.23);
+  ctx.globalAlpha=1;
+}
+function draw(){
+  drawBackground();
+  // soft glow behind player
+  if(player){
+    const px=player.x,py=player.y-cameraY;
+    const glow=ctx.createRadialGradient(px,py,3,px,py,45);
+    glow.addColorStop(0,"#80dfff20");glow.addColorStop(1,"#80dfff00");
+    ctx.fillStyle=glow;ctx.fillRect(px-46,py-46,92,92);
+  }
+  platforms.forEach(drawPlatform);
+  if(player)drawHero();
+  drawAim();drawParticles();drawNotice();
+  if(flash>0){
+    ctx.globalAlpha=clamp(flash/.14,0,1)*.12;ctx.fillStyle="#fff8d5";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+  }
+}
+function frame(now){
+  const dt=clamp((now-lastTime)/1000||0,.001,.032);
+  lastTime=now;
+  update(dt);draw();
+  requestAnimationFrame(frame);
+}
+function init(){
+  setCanvasSize();initialized=true;bestEl.textContent=bestScore.toLocaleString("ja-JP");
+  requestAnimationFrame(t=>{lastTime=t;requestAnimationFrame(frame)});
+}
+window.addEventListener("resize",setCanvasSize,{passive:true});
+window.addEventListener("orientationchange",()=>setTimeout(setCanvasSize,180),{passive:true});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing")showPause()});
+showTitle();init();
+})();
+</script>
+</body>
+</html>
