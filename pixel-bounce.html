@@ -74,7 +74,7 @@ h1{font-size:clamp(28px,8vw,39px);line-height:1.05;margin:0;letter-spacing:.035e
       <div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div>
     </div>
     <button class="primary" id="mainBtn">のぼり始める</button>
-    <p class="smallnote">画面の下へ落ちたら終了。記録は到達した高さだけ。<br>狙いを少しずつ調整して、もっと上へ。</p>
+    <p class="smallnote">画面の下へ落ちたら終了。高くなるほど足場が狭くなり、動く足場も増える。</p>
   </section>
 </div>
 </main>
@@ -95,7 +95,7 @@ const restartBtn=document.getElementById("restartBtn");
 let W=360,H=760,dpr=1,initialized=false;
 let state="ready";
 let player,platforms=[],particles=[];
-let cameraY=0,baseY=0,nextId=1,nextPlatformY=0;
+let cameraY=0,baseY=0,nextId=1,nextPlatformY=0,worldTime=0;
 let runHeight=0,nextMilestone=100;
 let bestHeight=readNum("pixelClimberBestHeight",0);
 let runStartBestHeight=bestHeight;
@@ -114,15 +114,21 @@ function readNum(key,fallback){try{const v=Number(localStorage.getItem(key));ret
 function writeNum(key,value){try{localStorage.setItem(key,String(value))}catch(e){}}
 function setCanvasSize(){
   const rect=gameEl.getBoundingClientRect();
-  const oldW=W,oldH=H;
+  const oldW=W;
   W=Math.max(280,rect.width);H=Math.max(420,rect.height);
   dpr=Math.min(window.devicePixelRatio||1,2);
   canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;
   if(initialized){
     const ratio=W/oldW;
-    if(player){player.x=clamp(player.x*ratio,PLAYER_R+5,W-PLAYER_R-5)}
-    platforms.forEach(p=>{p.x=clamp(p.x*ratio,p.w/2+6,W-p.w/2-6)});
+    if(player)player.x=clamp(player.x*ratio,PLAYER_R+5,W-PLAYER_R-5);
+    platforms.forEach(p=>{
+      p.w=Math.min(p.w,W-18);
+      p.moveAmp=Math.min(p.moveAmp||0,Math.max(0,(W-p.w)/2-8));
+      const margin=p.w/2+8+p.moveAmp;
+      p.originX=clamp((p.originX==null?p.x:p.originX)*ratio,margin,W-margin);
+      p.x=p.originX;
+    });
     if(player&&state!=="ready"){
       const desired=player.y-H*.62;
       cameraY=Math.min(cameraY,desired);
@@ -137,29 +143,62 @@ function generatePlatforms(){
   let minY=Infinity;
   platforms.forEach(p=>{if(p.y<minY)minY=p.y});
   const threshold=cameraY-H*1.25;
-  let climbed=Math.max(0,baseY-minY);
   while(minY>threshold){
-    const difficulty=clamp(climbed/5200,0,1);
-    const spacing=rand(72+4*difficulty,88+10*difficulty);
+    // Estimate the height of the next generated row, compensating for the off-screen platform buffer.
+    const plannedHeight=Math.max(0,runHeight,(baseY-minY-H*1.65)/10);
+    const difficulty=clamp((plannedHeight-25)/625,0,1);
+    const roll=Math.random();
+    let spacing;
+    if(roll<.16)spacing=rand(58,74);
+    else if(roll<.58)spacing=rand(73,97);
+    else if(roll<.82)spacing=rand(97,116+15*difficulty);
+    else spacing=rand(68,122+20*difficulty);
+    spacing=clamp(spacing,58,142);
+
+    // A wider rest platform occasionally breaks up longer, more demanding runs.
+    const rest=nextId%8===0;
+    if(rest)spacing=rand(70,89);
     const platformY=minY-spacing;
     const previous=platforms.reduce((a,p)=>p.y<a.y?p:a,platforms[0]);
-    const w=clamp(rand(148-32*difficulty,168-40*difficulty),90,Math.min(168,W-18));
-    const margin=w/2+9;
-    const maxDelta=Math.min(90,W*.28);
-    let x=clamp(previous.x+rand(-maxDelta,maxDelta),margin,W-margin);
-    if(Math.abs(x-previous.x)<28){
-      const dir=previous.x>W*.5?-1:1;
-      x=clamp(previous.x+dir*rand(34,58),margin,W-margin);
-      if(Math.abs(x-previous.x)<20)x=clamp(previous.x-dir*rand(34,58),margin,W-margin);
+
+    const maxW=Math.min(166-48*difficulty,W-18);
+    const minW=Math.min(124-54*difficulty,Math.max(64,maxW-16));
+    const w=rest?rand(Math.max(minW,maxW-14),maxW):rand(minW,maxW);
+
+    let movingChance=.11+.36*difficulty;
+    if(previous.type==="moving")movingChance*=.55;
+    const moving=!rest&&Math.random()<movingChance;
+    const moveAmp=moving?Math.min(W*.09,18+22*difficulty):0;
+    const margin=w/2+8+moveAmp;
+
+    const verticalLimit=clamp(156-(spacing-60)*.65,78,156);
+    let maxDelta=Math.min(verticalLimit,W*(.24+.10*difficulty),78+42*difficulty);
+    if(rest)maxDelta=Math.min(maxDelta,62);
+    maxDelta=Math.max(34,maxDelta-(previous.moveAmp||0)*.35);
+
+    const previousX=previous.x;
+    let x=clamp(previousX+rand(-maxDelta,maxDelta),margin,W-margin);
+    if(Math.abs(x-previousX)<22){
+      const dir=previousX<W/2?1:-1;
+      const step=Math.max(28,maxDelta*.8);
+      x=clamp(previousX+dir*step,margin,W-margin);
+      if(Math.abs(x-previousX)<22)x=clamp(previousX-dir*step,margin,W-margin);
     }
-    platforms.push(newPlatform(x,platformY,w,"stone"));
+
+    const p=newPlatform(x,platformY,w,moving?"moving":"stone");
+    if(moving){
+      p.moveAmp=moveAmp;
+      p.moveSpeed=.62+1.05*difficulty+rand(0,.18);
+      p.originX=clamp(x,margin,W-margin);
+      p.x=p.originX+Math.sin(worldTime*p.moveSpeed+p.phase)*p.moveAmp;
+    }
+    platforms.push(p);
     minY=platformY;
-    climbed=Math.max(0,baseY-minY);
   }
 }
 function resetRun(){
   runStartBestHeight=bestHeight;
-  runHeight=0;nextMilestone=100;
+  runHeight=0;nextMilestone=100;worldTime=0;
   nextId=1;platforms=[];particles=[];cameraY=0;notice="";noticeTime=0;flash=0;
   drag.active=false;lastLaunchPlatformId=null;
   baseY=H-92;
@@ -179,7 +218,7 @@ function resetRun(){
 }
 function showTitle(){
   state="ready";overlay.classList.remove("hidden");
-  panel.innerHTML='<div class="logoicon">🧗</div><h1>PIXEL<br>CLIMBER</h1><div class="subtitle">終わらない塔を、どこまでも。</div><p class="lead">引っ張って飛び、足場に着地して、できるだけ高く登ろう。競うのは到達高度だけ！</p><div class="instructions"><div class="instruction"><b>1</b><span>好きな場所から<br>ドラッグ</span></div><div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div><div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div></div><button class="primary" id="mainBtn">のぼり始める</button><p class="smallnote">画面の下へ落ちたら終了。記録は到達した高さだけ。<br>狙いを少しずつ調整して、もっと上へ。</p>';
+  panel.innerHTML='<div class="logoicon">🧗</div><h1>PIXEL<br>CLIMBER</h1><div class="subtitle">終わらない塔を、どこまでも。</div><p class="lead">引っ張って飛び、足場に着地して、できるだけ高く登ろう。競うのは到達高度だけ！</p><div class="instructions"><div class="instruction"><b>1</b><span>好きな場所から<br>ドラッグ</span></div><div class="instruction"><b>2</b><span>逆方向へ<br>矢印を向ける</span></div><div class="instruction"><b>3</b><span>指を離して<br>発射！</span></div></div><button class="primary" id="mainBtn">のぼり始める</button><p class="smallnote">画面の下へ落ちたら終了。高くなるほど足場が狭くなり、動く足場も増える。</p>';
   document.getElementById("mainBtn").addEventListener("click",resetRun);
   hintEl.style.opacity="0";pauseBtn.textContent="Ⅱ";
 }
@@ -265,6 +304,16 @@ function landOn(p){
 }
 function update(dt){
   if(state!=="playing")return;
+  worldTime+=dt;
+  // Move platforms before physics/collision checks, and carry the climber when standing on one.
+  platforms.forEach(p=>{
+    if(p.type!=="moving")return;
+    const oldX=p.x;
+    p.x=p.originX+Math.sin(worldTime*p.moveSpeed+p.phase)*p.moveAmp;
+    if(player&&!player.airborne&&player.platformId===p.id){
+      player.x=clamp(player.x+(p.x-oldX),player.r,W-player.r);
+    }
+  });
   if(player.airborne){
     const prevY=player.y;
     player.vy+=GRAVITY*dt;
@@ -352,14 +401,20 @@ function drawPlatform(p){
   const sy=p.y-cameraY;
   if(sy<-30||sy>H+40)return;
   const x=p.x-p.w/2;
-  const fill=p.type==="start"?"#536e88":"#526a82";
-  const top=p.type==="start"?"#c0d6e6":"#a5c1d5";
-  const edge="#2d4057";
+  let fill=p.type==="start"?"#536e88":"#526a82";
+  let top=p.type==="start"?"#c0d6e6":"#a5c1d5";
+  let edge="#2d4057";
+  if(p.type==="moving"){fill="#285e72";top="#8ee8ed";edge="#173849"}
   rect(x,sy,p.w,12,edge);
   rect(x+2,sy+2,p.w-4,9,fill);
   rect(x,sy,p.w,3,top);
   for(let xx=x+9;xx<x+p.w-5;xx+=18)rect(xx,sy+5,4,2,edge);
   rect(x+5,sy+12,Math.max(0,p.w-10),2,"#111b2c88");
+  if(p.type==="moving"){
+    // Tiny cyan arrows make horizontal movement immediately recognisable.
+    rect(x+7,sy+5,5,2,"#c5fbff");rect(x+10,sy+3,2,2,"#c5fbff");rect(x+10,sy+7,2,2,"#c5fbff");
+    rect(x+p.w-14,sy+5,5,2,"#c5fbff");rect(x+p.w-14,sy+3,2,2,"#c5fbff");rect(x+p.w-14,sy+7,2,2,"#c5fbff");
+  }
 }
 function drawHero(){
   const x=Math.round(player.x),y=Math.round(player.y-cameraY);
