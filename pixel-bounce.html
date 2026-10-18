@@ -101,6 +101,7 @@ let cameraY=0,baseY=0,nextId=1,nextPlatformY=0;
 let score=0,combo=0,maxCombo=0,landings=0,runHeight=0;
 let bestScore=readNum("pixelClimberBest",0);
 let bestHeight=readNum("pixelClimberBestHeight",0);
+let runStartBest=bestScore,runStartBestHeight=bestHeight;
 let lastLaunchPlatformId=null;
 let drag={active:false,startX:0,startY:0,x:0,y:0,pointerId:null};
 let notice="",noticeTime=0,flash=0,lastTime=0;
@@ -164,6 +165,7 @@ function generatePlatforms(){
   }
 }
 function resetRun(){
+  runStartBest=bestScore;runStartBestHeight=bestHeight;
   score=0;combo=0;maxCombo=0;landings=0;runHeight=0;
   nextId=1;platforms=[];particles=[];cameraY=0;notice="";noticeTime=0;flash=0;
   drag.active=false;lastLaunchPlatformId=null;
@@ -199,7 +201,7 @@ function showPause(){
 function gameOver(){
   if(state==="over")return;
   state="over";drag.active=false;
-  const isNew=score>bestScore||runHeight>bestHeight;
+  const isNew=score>runStartBest||runHeight>runStartBestHeight;
   if(score>bestScore){bestScore=score;writeNum("pixelClimberBest",bestScore)}
   if(runHeight>bestHeight){bestHeight=Math.floor(runHeight);writeNum("pixelClimberBestHeight",bestHeight)}
   updateHUD();
