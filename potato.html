@@ -98,6 +98,22 @@ if(kind==="rock"&&rockStyle!=="potatoLike"){
  if(dirt>0){
   for(let i=0;i<Math.floor(340*dirt);i++){const px=r()*1024,py=r()*512,rr=.5+r()*3.1;x.beginPath();x.ellipse(px,py,rr*(.7+r()*1.5),rr*(.35+r()),r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#342b20":"#aa9877";x.globalAlpha=(.035+r()*.10)*dirt;x.fill()}
  }
+ if(kind==="rock"&&rockStyle==="muddy"){
+  // Extra-muddy stones: thick irregular earth crusts, dark wet soil and grit.
+  for(let k=0;k<22;k++){
+   const cx=r()*1024,cy=r()*512,spread=38+r()*105;
+   for(let j=0;j<18+Math.floor(r()*30);j++){
+    const px=cx+(r()-.5)*spread*2.1,py=cy+(r()-.5)*spread*1.1,rx=3+r()*spread*.28,ry=2+r()*spread*.16;
+    x.beginPath();x.ellipse(px,py,rx,ry,r()*Math.PI,0,Math.PI*2);
+    x.fillStyle=r()>.58?"#30251a":r()>.45?"#493522":"#655039";x.globalAlpha=.24+r()*.38;x.fill();
+   }
+  }
+  // Mud clumps have a few lighter gritty edges, making the dirt look stuck to the stone.
+  for(let j=0;j<260;j++){
+   const px=r()*1024,py=r()*512,rr=.8+r()*4.5;x.beginPath();x.ellipse(px,py,rr*(.7+r()),rr,r(),0,Math.PI*2);
+   x.fillStyle=r()>.5?"#9b8767":"#241d16";x.globalAlpha=.18+r()*.3;x.fill();
+  }
+ }
  if(kind==="rock"&&rockStyle==="potatoLike"){
   // Earth sticks to only part of the rock. The grey stone remains visible beside it.
   // Randomize coverage per stone: a few flecks, one broad smear, or several soil clumps.
@@ -294,7 +310,7 @@ function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
  round++;objectRoot.rotation.set(0,0,0);
  if(goldGlowSprite){objectRoot.remove(goldGlowSprite);goldGlowSprite.material.dispose();goldGlowSprite=null}
- const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&bankedPotatoes.length>=10&&r()>.97;
+ const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered","muddy"][Math.floor(r()*4)]), dirt=isPotato?.22+r()*.58:rockStyle==="muddy"?.88+r()*.12:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&bankedPotatoes.length>=10&&r()>.97;
  current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle,golden};
  objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82,rockStyle);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*.9,.86+(r()-.5)*.22,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
  if(golden&&objectMesh.children[0]&&objectMesh.children[0].material){
