@@ -129,7 +129,7 @@ if(kind==="rock"&&rockStyle!=="potatoLike"){
 function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
  const r=rng(seed),g=new THREE.SphereGeometry(1,kind==="potato"?80:rockStyle==="potatoLike"?64:48,kind==="potato"?56:rockStyle==="potatoLike"?44:32),p=g.attributes.position;
  const eyes=[];
- if(kind==="potato")for(let k=0;k<19;k++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI;eyes.push({x:Math.cos(b)*Math.cos(a),y:Math.sin(b),z:Math.cos(b)*Math.sin(a),size:.024+r()*.026,depth:.014+r()*.025})}
+ if(kind==="potato")for(let k=0;k<14;k++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI;eyes.push({x:Math.cos(b)*Math.cos(a),y:Math.sin(b),z:Math.cos(b)*Math.sin(a),size:.026+r()*.025,depth:.016+r()*.026})}
  for(let i=0;i<p.count;i++){
   const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
   let wave=Math.sin(x*5.4+seed*.013)*Math.sin(y*4.7+seed*.009)*.045+Math.sin(z*8.3+x*3.1+seed*.02)*.026+Math.sin(y*11.7-z*4.2+seed*.01)*.012;
@@ -151,12 +151,12 @@ function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
   }
   else {
    // Potatoes are asymmetric and softly tapered, not perfect spheres.
-   const shoulder=1+.125*Math.sin(y*2.55+seed*.004)+.042*Math.sin(x*4.5+z*2.3+seed*.01)+.022*Math.sin(z*5.2+y*1.7);
-   const waist=1-.055*Math.pow(Math.abs(y),2.2)+.025*Math.sin(x*3.4+seed*.02);
-   xx*=shoulder*waist*(1+.035*Math.sin(y*5.2+seed*.02));
-   yy*=.91+.035*Math.sin(x*4.1+seed*.01)+.022*Math.sin(z*7.2+seed*.02);
-   zz*=.94+.043*Math.sin(y*4.2+x*2.3+seed*.01)+.018*Math.sin(x*7+z*3);
-   xx+=.032*Math.sin(y*3.1+seed*.02)+.012*Math.sin(z*5.4+seed*.003);
+   const shoulder=1+.16*Math.sin(y*2.35+seed*.004)+.055*Math.sin(x*4.1+z*2.1+seed*.01)+.032*Math.sin(z*5.2+y*1.7);
+   const waist=1-.075*Math.pow(Math.abs(y),2.0)+.035*Math.sin(x*3.4+seed*.02);
+   xx*=shoulder*waist*(1+.045*Math.sin(y*5.2+seed*.02));
+   yy*=.88+.045*Math.sin(x*4.1+seed*.01)+.028*Math.sin(z*7.2+seed*.02);
+   zz*=.92+.055*Math.sin(y*4.2+x*2.3+seed*.01)+.025*Math.sin(x*7+z*3);
+   xx+=.045*Math.sin(y*3.1+seed*.02)+.018*Math.sin(z*5.4+seed*.003);
   }
   p.setXYZ(i,xx,yy,zz)
  }
@@ -287,7 +287,7 @@ function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
  round++;objectRoot.rotation.set(0,0,0);
  if(goldGlowSprite){objectRoot.remove(goldGlowSprite);goldGlowSprite.material.dispose();goldGlowSprite=null}
- const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&r()>.93;
+ const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&r()>.97;
  current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle,golden};
  objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82,rockStyle);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*.9,.86+(r()-.5)*.22,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
  if(golden&&objectMesh.children[0]&&objectMesh.children[0].material){
