@@ -197,14 +197,17 @@ function makeBasket(){
 function showNotice(main,sub){
  if(!scene)return;
  if(noticeSprite){scene.remove(noticeSprite);if(noticeSprite.material.map)noticeSprite.material.map.dispose();noticeSprite.material.dispose()}
- const cv=document.createElement("canvas");cv.width=1024;cv.height=256;const x=cv.getContext("2d");
- x.clearRect(0,0,1024,256);
- // Subtle subtitle-style feedback: no panel, border, or opaque background.
- x.textAlign="center";x.textBaseline="middle";x.shadowColor="rgba(0,0,0,.38)";x.shadowBlur=12;x.shadowOffsetY=3;
- x.fillStyle="rgba(255,244,220,.88)";x.font="500 62px system-ui,sans-serif";x.fillText(main,512,92,940);
- if(sub){x.fillStyle="rgba(245,232,207,.62)";x.font="400 31px system-ui,sans-serif";x.fillText(sub,512,166,940)}
+ const cv=document.createElement("canvas");cv.width=2048;cv.height=512;const x=cv.getContext("2d");
+ x.clearRect(0,0,2048,512);
+ // High-resolution, borderless subtitle with a generous size for phone screens.
+ x.textAlign="center";x.textBaseline="middle";x.shadowColor="rgba(0,0,0,.72)";x.shadowBlur=18;x.shadowOffsetY=5;
+ x.fillStyle="rgba(255,248,231,.97)";x.font="600 112px system-ui,-apple-system,sans-serif";x.fillText(main,1024,174,1880);
+ if(sub){x.fillStyle="rgba(255,244,220,.82)";x.font="500 58px system-ui,-apple-system,sans-serif";x.fillText(sub,1024,332,1880)}
  x.shadowBlur=0;x.shadowOffsetY=0;
- const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,opacity:.88});noticeSprite=new THREE.Sprite(mat);noticeSprite.position.set(0,1.43,-.55);noticeSprite.scale.set(1.56,.30,1);scene.add(noticeSprite);if(noticeTimer)clearTimeout(noticeTimer);const shown=noticeSprite;noticeTimer=setTimeout(()=>{if(noticeSprite===shown){scene.remove(shown);if(shown.material.map)shown.material.map.dispose();shown.material.dispose();noticeSprite=null}},1050);
+ const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;tex.generateMipmaps=false;
+ const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,opacity:1});
+ noticeSprite=new THREE.Sprite(mat);noticeSprite.position.set(0,1.36,-.55);noticeSprite.scale.set(2.55,.64,1);scene.add(noticeSprite);
+ if(noticeTimer)clearTimeout(noticeTimer);const shown=noticeSprite;noticeTimer=setTimeout(()=>{if(noticeSprite===shown){scene.remove(shown);if(shown.material.map)shown.material.map.dispose();shown.material.dispose();noticeSprite=null}},1350);
 }
 function showFatal(message){const box=document.getElementById("fatal");document.getElementById("fatalText").textContent=message;box.hidden=false}
 function disposeObject(o){o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m.map)m.map.dispose();m.dispose()})}})}
