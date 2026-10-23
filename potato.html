@@ -6,23 +6,30 @@
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#211b14;touch-action:none}body{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}.fatal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:26px;background:#211b14;color:#eee7d7;font-family:system-ui,sans-serif;text-align:center}.fatal[hidden]{display:none}.fatal-card{max-width:360px;border:1px solid #8c7652;background:#30271c;padding:24px;border-radius:18px;line-height:1.7}.fatal button{border:0;border-radius:10px;background:#d7bd86;color:#211b14;font-weight:800;padding:12px 20px;margin-top:12px}
 
-#hud{position:fixed;z-index:4;left:14px;right:14px;top:max(12px,env(safe-area-inset-top));color:#f5e8cd;font:800 14px system-ui,sans-serif;pointer-events:none;text-shadow:0 2px 8px #000}
-.hudtop{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border:1px solid #8c765277;border-radius:15px;background:#21180fc9;backdrop-filter:blur(8px)}
-.hudstat{font-size:clamp(11px,3.1vw,16px);white-space:nowrap}.hudstat b{font-size:1.13em;color:#f6d89c}
-#timeTrack{height:10px;border:1px solid #c5a875;border-radius:99px;background:#231a10d9;margin-top:8px;overflow:hidden}
+#hud{position:fixed;z-index:4;left:14px;right:14px;top:max(12px,env(safe-area-inset-top));color:#f5e8cd;font:700 13px system-ui,sans-serif;pointer-events:none;text-shadow:0 2px 8px #000}
+.hudtop{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;align-items:stretch;padding:9px;border:1px solid #8c765277;border-radius:15px;background:#21180fc9;backdrop-filter:blur(8px)}
+.hudstat{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:#c8b99b;white-space:nowrap}
+.hudstat b{font-size:clamp(15px,4.2vw,20px);color:#f6d89c;line-height:1.2;font-weight:900}
+.hudstat .unit{font-size:.72em;color:#ddcba8}
+#timeTrack{height:6px;border:1px solid #8c765277;border-radius:99px;background:#231a10d9;margin-top:6px;overflow:hidden}
 #timeFill{height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,#c7d27c,#e4b85d,#dc694a);transition:width .12s linear}
 #endPanel{position:fixed;z-index:8;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:#100c09bb;backdrop-filter:blur(7px);font-family:system-ui,sans-serif;color:#f6e9ce}
 #endPanel.show{display:flex}.endcard{width:min(100%,370px);padding:26px 22px;border:1px solid #b49a6a;border-radius:24px;background:linear-gradient(145deg,#493723f5,#21180ff5);text-align:center;box-shadow:0 20px 70px #0009}
 .endeyebrow{color:#d6b980;font-weight:900;letter-spacing:.14em;font-size:12px}.endtitle{font-size:30px;font-weight:1000;margin:8px 0}.endscore{font-size:42px;font-weight:1000;color:#ffe0a0;line-height:1.2}.endmeta{color:#d9c9ab;font-size:14px;line-height:1.8;margin:12px 0 20px}
+.endstats{display:grid;gap:8px;margin:16px 0 20px;text-align:left}.endrow{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:10px;background:#1e160fa8;color:#d9c9ab;font-size:14px}.endrow strong{color:#ffe0a0;font-size:15px}
 #restartBtn{width:100%;border:0;border-radius:14px;padding:15px;background:#e4c48a;color:#2a1d10;font-size:16px;font-weight:1000}
 #hint{position:fixed;z-index:3;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));text-align:center;color:#f0dfc0;font:700 12px system-ui,sans-serif;text-shadow:0 2px 8px #000;pointer-events:none;opacity:.85}
 </style>
 </head>
 <body>
 <canvas id="world" aria-label="3D空間で対象をつかんでバスケットに仕分ける"></canvas>
-<div id="hud"><div class="hudtop"><span class="hudstat">⏳ <b id="timeText">45.0秒</b></span><span class="hudstat">💰 <b id="scoreText">¥0</b></span><span class="hudstat">🥔 <b id="countText">0個</b></span></div><div id="timeTrack"><div id="timeFill"></div></div></div>
+<div id="hud"><div class="hudtop">
+<div class="hudstat"><span>残り時間</span><b id="timeText">45.0<span class="unit">秒</span></b></div>
+<div class="hudstat"><span>今回の売上</span><b id="scoreText">¥0</b></div>
+<div class="hudstat"><span>カゴに入れた数</span><b><span id="countText">0</span><span class="unit">個</span></b></div>
+</div><div id="timeTrack"><div id="timeFill"></div></div></div>
 <div id="hint">ドラッグして、勢いよくカゴへ！石はカゴの外へ</div>
-<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endscore" id="endScore">¥0</div><div class="endmeta" id="endMeta">今回の売上</div><button id="restartBtn">もう一度挑戦</button></div></div>
+<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endscore" id="endScore">¥0</div><div class="endstats" id="endMeta"><div class="endrow"><span>今回の売上</span><strong>¥0</strong></div></div><button id="restartBtn">もう一度挑戦</button></div></div>
 <div class="fatal" id="fatal" hidden><div class="fatal-card"><strong>3D空間を準備できませんでした</strong><br><span id="fatalText">通信を確認して、もう一度試してください。</span><br><button onclick="location.reload()">再読み込み</button></div></div>
 <script>
 window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const urls=["https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js","https://unpkg.com/three@0.160.0/build/three.min.js"];let index=0,finished=false;function attempt(){if(finished)return;if(window.THREE){finished=true;done(true);return}if(index>=urls.length){finished=true;done(false);return}const s=document.createElement("script");s.src=urls[index++];let timer=setTimeout(()=>{if(!window.THREE){s.remove();attempt()}},6000);s.onload=()=>{clearTimeout(timer);if(window.THREE){finished=true;done(true)}else attempt()};s.onerror=()=>{clearTimeout(timer);attempt()};document.head.appendChild(s)}attempt()};
@@ -33,21 +40,25 @@ const canvas=document.getElementById("world");
 let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,best=Number(localStorage.getItem("potato3dBest")||0),velocity,physics=false,gameSeconds=45,lastFrame=0,objectResolved=false;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
-function skinTexture(seed,kind,dirt){
+function skinTexture(seed,kind,dirt,rockStyle="angular"){
  const r=rng(seed),c=document.createElement("canvas");c.width=1024;c.height=512;const x=c.getContext("2d");
- const base=kind==="rock"?"#77705e":"#98774d";x.fillStyle=base;x.fillRect(0,0,1024,512);
+ const base=kind==="rock"?(rockStyle==="potatoLike"?"#98734a":rockStyle==="layered"?"#77776d":"#69675f"):"#98774d";x.fillStyle=base;x.fillRect(0,0,1024,512);
  for(let i=0;i<260;i++){const px=r()*1024,py=r()*512,rx=8+r()*75,ry=4+r()*28;x.beginPath();x.ellipse(px,py,rx,ry,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#d2b58a":"#473421";x.globalAlpha=.025+r()*.075;x.fill()}
- const g=x.createLinearGradient(0,0,850,512);g.addColorStop(0,"#c4a477");g.addColorStop(.25,base);g.addColorStop(.7,kind==="rock"?"#625b4b":"#6e5030");g.addColorStop(1,"#3c3022");x.globalAlpha=.5;x.fillStyle=g;x.fillRect(0,0,1024,512);x.globalAlpha=1;
+ const g=x.createLinearGradient(0,0,850,512);g.addColorStop(0,"#c4a477");g.addColorStop(.25,base);g.addColorStop(.7,kind==="rock"?(rockStyle==="potatoLike"?"#735333":rockStyle==="layered"?"#50534e":"#4d4b47"):"#6e5030");g.addColorStop(1,"#3c3022");x.globalAlpha=.5;x.fillStyle=g;x.fillRect(0,0,1024,512);x.globalAlpha=1;
  for(let i=0;i<4300;i++){const px=r()*1024,py=r()*512,rr=.25+r()*1.4;x.beginPath();x.ellipse(px,py,rr*(.6+r()),rr,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#30261b":"#dfc59a";x.globalAlpha=.06+r()*.2;x.fill()}
- if(kind==="potato"){
-  // Characteristic potato eyes: dark, shallow pits with a pale raised edge.
-  for(let i=0;i<42;i++){const px=r()*1024,py=r()*512,rx=2+r()*5,ry=1.5+r()*3.5;x.beginPath();x.ellipse(px,py,rx*1.8,ry*1.7,r()*.8,0,Math.PI*2);x.fillStyle="#d2b78f";x.globalAlpha=.35;x.fill();x.beginPath();x.ellipse(px,py,rx,ry,r()*.8,0,Math.PI*2);x.fillStyle="#382719";x.globalAlpha=.55;x.fill();x.beginPath();x.ellipse(px-rx*.15,py-ry*.2,rx*.4,ry*.3,0,0,Math.PI*2);x.fillStyle="#17120d";x.globalAlpha=.45;x.fill()}
+ if(kind==="potato"||(kind==="rock"&&rockStyle==="potatoLike")){
+  // Potato-like stones have shallow rounded marks, but no true potato-eye pits.
+  const n=kind==="potato"?42:18;
+  for(let i=0;i<n;i++){const px=r()*1024,py=r()*512,rx=2+r()*(kind==="potato"?5:12),ry=1.5+r()*(kind==="potato"?3.5:7);x.beginPath();x.ellipse(px,py,rx*1.8,ry*1.7,r()*.8,0,Math.PI*2);x.fillStyle=kind==="potato"?"#d2b78f":"#c0a078";x.globalAlpha=kind==="potato"?.35:.18;x.fill();x.beginPath();x.ellipse(px,py,rx,ry,r()*.8,0,Math.PI*2);x.fillStyle=kind==="potato"?"#382719":"#5f4934";x.globalAlpha=kind==="potato"?.55:.28;x.fill();if(kind==="potato"){x.beginPath();x.ellipse(px-rx*.15,py-ry*.2,rx*.4,ry*.3,0,0,Math.PI*2);x.fillStyle="#17120d";x.globalAlpha=.45;x.fill()}}
+ }
+ if(kind==="rock"&&rockStyle!=="potatoLike"){
+  for(let i=0;i<95;i++){const px=r()*1024,py=r()*512,rx=3+r()*30,ry=2+r()*9;x.beginPath();x.ellipse(px,py,rx,ry,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#d1cbbc":"#343632";x.globalAlpha=.08+r()*.16;x.fill()}
  }
  // Soil patches are especially thick on stones, disguising their grey-brown rock beneath.
  if(dirt>0){for(let i=0;i<Math.floor(760*dirt);i++){const px=r()*1024,py=r()*512,rr=2+r()*17;x.beginPath();x.ellipse(px,py,rr*(.6+r()*1.7),rr*(.25+r()*.8),r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.45?"#34271b":"#60482d";x.globalAlpha=(.07+r()*.32)*dirt;x.fill()}}
  x.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
 }
-function createSpecimen(seed,kind,dirt,sprout){
+function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
  const r=rng(seed),g=new THREE.SphereGeometry(1,112,80),p=g.attributes.position;
  const eyes=[];
  if(kind==="potato")for(let k=0;k<15;k++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI;eyes.push({x:Math.cos(b)*Math.cos(a),y:Math.sin(b),z:Math.cos(b)*Math.sin(a),size:.035+r()*.045,depth:.018+r()*.035})}
@@ -56,16 +67,29 @@ function createSpecimen(seed,kind,dirt,sprout){
   let wave=Math.sin(x*5.4+seed*.013)*Math.sin(y*4.7+seed*.009)*.045+Math.sin(z*8.3+x*3.1+seed*.02)*.026+Math.sin(y*11.7-z*4.2+seed*.01)*.012;
   let dent=0;for(const e of eyes){const dx=x-e.x,dy=y-e.y,dz=z-e.z,d=Math.sqrt(dx*dx+dy*dy+dz*dz);dent+=e.depth*Math.exp(-(d*d)/(e.size*e.size*1.5))}
   let n=1+wave-dent+(r()-.5)*.008,xx=x*n,yy=y*n,zz=z*n;
-  if(kind==="rock"){n=1+Math.sin(x*4.4+seed*.01)*Math.sin(y*5.3+z*2.2)*.075+Math.sin(z*7.5+x*4.7+seed*.03)*.05;xx=x*n+.035*Math.sin(y*7+seed);yy=y*n+.03*Math.sin(x*8+seed);zz=z*n}
+  if(kind==="rock"){
+   if(rockStyle==="potatoLike"){
+    n=1+Math.sin(x*4.4+seed*.01)*Math.sin(y*4.1+z*2.2)*.038+Math.sin(z*5.2+x*3.5+seed*.03)*.022;
+    const shoulder=1+.075*Math.sin(y*2.8+seed*.004);xx=x*n*shoulder;yy=y*n*.9;zz=z*n*.93;
+   }else if(rockStyle==="layered"){
+    n=1+Math.sin(x*5.1+seed*.01)*Math.sin(y*3.7+z*2.2)*.06+Math.sin(z*9.5+x*4.7+seed*.03)*.045;
+    xx=x*n+.07*Math.sin(y*6+seed);yy=y*n+.055*Math.sin(x*8+seed);zz=z*n+.03*Math.sin(y*9+seed);
+    xx=Math.round(xx*9)/9;yy=Math.round(yy*9)/9;zz=Math.round(zz*9)/9;
+   }else{
+    n=1+Math.sin(x*4.4+seed*.01)*Math.sin(y*5.3+z*2.2)*.10+Math.sin(z*7.5+x*4.7+seed*.03)*.07;
+    xx=x*n+.06*Math.sin(y*7+seed);yy=y*n+.05*Math.sin(x*8+seed);zz=z*n+.035*Math.sin(x*5+z*6);
+    xx=Math.round(xx*7)/7;yy=Math.round(yy*7)/7;zz=Math.round(zz*7)/7;
+   }
+  }
   else {const shoulder=1+.105*Math.sin(y*2.8+seed*.004)+.045*Math.sin(x*4.5+z*2.3+seed*.01);xx*=shoulder*(1+.045*Math.sin(y*5.2+seed*.02));yy*=.88+.045*Math.sin(x*4.1+seed*.01)+.025*Math.sin(z*7.2+seed*.02);zz*=.92+.055*Math.sin(y*4.2+x*2.3+seed*.01);xx+=.045*Math.sin(y*3.1+seed*.02)}
   p.setXYZ(i,xx,yy,zz)
  }
  g.computeVertexNormals();
- const group=new THREE.Group(),tex=skinTexture(seed,kind,dirt),mat=new THREE.MeshStandardMaterial({map:tex,roughness:.94,metalness:0});
- const mesh=new THREE.Mesh(g,mat);mesh.scale.set(kind==="rock"?.9:1.02,kind==="rock"?.83:.96,kind==="rock"?.88:.95);mesh.rotation.set(.14,(r()-.5)*.25,(r()-.5)*.35);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
+ const group=new THREE.Group(),tex=skinTexture(seed,kind,dirt,rockStyle),mat=new THREE.MeshStandardMaterial({map:tex,roughness:rockStyle==="potatoLike"?.97:.94,metalness:0});
+ const mesh=new THREE.Mesh(g,mat);mesh.scale.set(kind==="rock"?(rockStyle==="potatoLike"?.98:.88):1.02,kind==="rock"?(rockStyle==="potatoLike"?.91:.83):.96,kind==="rock"?(rockStyle==="potatoLike"?.93:.88):.95);mesh.rotation.set(.14,(r()-.5)*.25,(r()-.5)*.35);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
  // Soil grains and small clods sit on top of the skin rather than reading as colour alone.
  const soilMat=new THREE.MeshStandardMaterial({color:"#4a3825",roughness:1});
- for(let i=0;i<Math.floor(dirt*48);i++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI,rad=kind==="rock"?.91:1.01,rr=.009+r()*.026,clod=new THREE.Mesh(new THREE.IcosahedronGeometry(rr,1),soilMat);clod.position.set(Math.cos(b)*Math.cos(a)*rad,Math.sin(b)*rad,Math.cos(b)*Math.sin(a)*rad);clod.scale.set(1.25,.7,.8);clod.castShadow=true;group.add(clod)}
+ for(let i=0;i<Math.floor(dirt*(rockStyle==="potatoLike"?26:48));i++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI,rad=kind==="rock"?(rockStyle==="potatoLike"?.97:.91):1.01,rr=.009+r()*.026,clod=new THREE.Mesh(new THREE.IcosahedronGeometry(rr,1),soilMat);clod.position.set(Math.cos(b)*Math.cos(a)*rad,Math.sin(b)*rad,Math.cos(b)*Math.sin(a)*rad);clod.scale.set(1.25,.7,.8);clod.castShadow=true;group.add(clod)}
  if(sprout){const sm=new THREE.MeshStandardMaterial({color:"#667044",roughness:.9});const stem=new THREE.Mesh(new THREE.ConeGeometry(.045,.16,7),sm);stem.position.set(.08,.91,.08);stem.rotation.z=-.45;stem.castShadow=true;group.add(stem)}
  return group;
 }
@@ -86,7 +110,7 @@ function showNotice(main,sub){
  const cv=document.createElement("canvas");cv.width=1024;cv.height=256;const x=cv.getContext("2d");
  x.clearRect(0,0,1024,256);x.fillStyle="rgba(36,27,18,.93)";x.beginPath();x.roundRect(10,10,1004,236,25);x.fill();x.strokeStyle="#a3875a";x.lineWidth=5;x.stroke();
  x.textAlign="center";x.textBaseline="middle";x.fillStyle="#ead7b2";x.font="bold 58px system-ui,sans-serif";x.fillText(main,512,96,940);x.fillStyle="#c0ad8b";x.font="34px system-ui,sans-serif";x.fillText(sub||"",512,177,940);
- const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});noticeSprite=new THREE.Sprite(mat);noticeSprite.position.set(0,1.64,-.55);noticeSprite.scale.set(2.2,.55,1);scene.add(noticeSprite);
+ const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false});noticeSprite=new THREE.Sprite(mat);noticeSprite.position.set(0,1.02,-.55);noticeSprite.scale.set(1.85,.42,1);scene.add(noticeSprite);
 }
 function showFatal(message){const box=document.getElementById("fatal");document.getElementById("fatalText").textContent=message;box.hidden=false}
 function disposeObject(o){o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m.map)m.map.dispose();m.dispose()})}})}
@@ -98,7 +122,7 @@ function addPotatoToBasket(){
 function resetGame(){
  ended=false;dragging=false;physics=false;score=0;round=0;gameSeconds=45;objectResolved=false;
  bankedPotatoes.forEach(p=>{scene.remove(p);disposeObject(p)});bankedPotatoes=[];
- if(basket){basket.rotation.set(0,0,0);basket.scale.set(1.30,1.10,1.30)}
+ if(basket){basket.rotation.set(0,0,0);basket.scale.set(1.34,1.10,1.34)}
  if(objectRoot)objectRoot.visible=true;
  showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();
 }
@@ -113,16 +137,16 @@ function init(){
  const fill=new THREE.DirectionalLight("#b8bdc7",.85);fill.position.set(4,1,-4);scene.add(fill);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#393126",roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.68;floor.receiveShadow=true;scene.add(floor);
  const back=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#282219",roughness:1}));back.position.z=-3;scene.add(back);
- basket=makeBasket();basket.scale.set(1.30,1.10,1.30);basket.position.y=.10;scene.add(basket);
+ basket=makeBasket();basket.scale.set(1.34,1.10,1.34);basket.position.y=.10;scene.add(basket);
  objectRoot=new THREE.Group();scene.add(objectRoot);
  ready=true;velocity=new THREE.Vector3();resize();showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();lastFrame=performance.now();animate();
 }
 function resize(){if(!renderer||!camera)return;const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
- round++;const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.43, dirt=isPotato?.22+r()*.58:.6+r()*.4,seed=Math.floor(r()*999999);
- current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt};
- objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*1.1,.56+(r()-.5)*.30,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
+ round++;const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.43, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999);
+ current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle};
+ objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82,rockStyle);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*.9,.86+(r()-.5)*.22,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
 }
 function pointerToPlane(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);return raycaster.ray.intersectPlane(dragPlane,hitPoint)}
 function updateHud(){document.getElementById("scoreText").textContent="¥"+score.toLocaleString("ja-JP");document.getElementById("countText").textContent=bankedPotatoes.length+"個";document.getElementById("timeText").textContent=Math.max(0,gameSeconds).toFixed(1)+"秒";document.getElementById("timeFill").style.width=(Math.max(0,gameSeconds)/45*100)+"%";}
@@ -151,7 +175,7 @@ function gameOver(message){
  if(score>best){best=score;try{localStorage.setItem("potato3dBest",String(best))}catch(_){}}
  document.getElementById("endTitle").textContent=gameSeconds<=0?"タイムアップ！":"鑑定終了！";
  document.getElementById("endScore").textContent="¥"+score.toLocaleString("ja-JP");
- document.getElementById("endMeta").innerHTML=message+"<br>じゃがいも："+bankedPotatoes.length+"個<br>ベスト売上：¥"+best.toLocaleString("ja-JP");
+ document.getElementById("endMeta").innerHTML='<div class="endrow"><span>今回の売上</span><strong>¥'+score.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>自己ベスト売上</span><strong>¥'+best.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>カゴに入れた数</span><strong>'+bankedPotatoes.length+' 個</strong></div><div class="endrow"><span>終了理由</span><strong>'+message+'</strong></div>';
  document.getElementById("endPanel").classList.add("show");
  showNotice("鑑定終了","売上 ¥"+score.toLocaleString("ja-JP"));
 }
