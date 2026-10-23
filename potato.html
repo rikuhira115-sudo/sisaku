@@ -42,7 +42,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function skinTexture(seed,kind,dirt,rockStyle="angular"){
  const r=rng(seed),c=document.createElement("canvas");c.width=1024;c.height=512;const x=c.getContext("2d");
- const base=kind==="rock"?(rockStyle==="potatoLike"?"#777263":rockStyle==="layered"?"#77776d":"#69675f"):"#98774d";x.fillStyle=base;x.fillRect(0,0,1024,512);
+ const base=kind==="rock"?(rockStyle==="potatoLike"?"#77756b":rockStyle==="layered"?"#77776d":"#69675f"):"#98774d";x.fillStyle=base;x.fillRect(0,0,1024,512);
  for(let i=0;i<260;i++){const px=r()*1024,py=r()*512,rx=8+r()*75,ry=4+r()*28;x.beginPath();x.ellipse(px,py,rx,ry,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#d2b58a":"#473421";x.globalAlpha=.025+r()*.075;x.fill()}
  const g=x.createLinearGradient(0,0,850,512);g.addColorStop(0,"#c4a477");g.addColorStop(.25,base);g.addColorStop(.7,kind==="rock"?(rockStyle==="potatoLike"?"#4e493e":rockStyle==="layered"?"#50534e":"#4d4b47"):"#6e5030");g.addColorStop(1,"#3c3022");x.globalAlpha=.5;x.fillStyle=g;x.fillRect(0,0,1024,512);x.globalAlpha=1;
  for(let i=0;i<4300;i++){const px=r()*1024,py=r()*512,rr=.25+r()*1.4;x.beginPath();x.ellipse(px,py,rr*(.6+r()),rr,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#30261b":"#dfc59a";x.globalAlpha=.06+r()*.2;x.fill()}
@@ -60,23 +60,34 @@ function skinTexture(seed,kind,dirt,rockStyle="angular"){
  }
  if(kind==="rock"&&rockStyle==="potatoLike"){
   // Earth sticks to only part of the rock. The grey stone remains visible beside it.
-  const patchCount=7+Math.floor(r()*5);
+  // Randomize coverage per stone: a few flecks, one broad smear, or several soil clumps.
+  const coverage=r();
+  const patchCount=coverage<.28?2+Math.floor(r()*3):coverage<.68?4+Math.floor(r()*4):7+Math.floor(r()*7);
   for(let k=0;k<patchCount;k++){
-   const cx=r()*1024,cy=r()*512,spread=28+r()*75,shade=r()>.45?"#493a28":"#59452e";
-   for(let j=0;j<18;j++){
-    const px=cx+(r()-.5)*spread*1.8,py=cy+(r()-.5)*spread*.95,rx=5+r()*spread*.28,ry=3+r()*spread*.13;
-    x.beginPath();x.ellipse(px,py,rx,ry,r()*.9,0,Math.PI*2);x.fillStyle=shade;x.globalAlpha=.22+r()*.34;x.fill();
+   const cx=r()*1024,cy=r()*512;
+   const spread=(coverage<.28?12:coverage<.68?22:34)+r()*(coverage<.28?28:coverage<.68?54:88);
+   const shade=r()>.5?"#493a28":r()>.5?"#59452e":"#6a5438";
+   const clumps=coverage<.28?5+Math.floor(r()*7):10+Math.floor(r()*17);
+   for(let j=0;j<clumps;j++){
+    const px=cx+(r()-.5)*spread*1.9,py=cy+(r()-.5)*spread*1.05,rx=2+r()*spread*.25,ry=1.5+r()*spread*.12;
+    x.beginPath();x.ellipse(px,py,rx,ry,r()*.9,0,Math.PI*2);x.fillStyle=shade;x.globalAlpha=(.12+r()*.27)*(coverage<.28?.7:1);x.fill();
    }
-   for(let j=0;j<8;j++){
-    const px=cx+(r()-.5)*spread*1.7,py=cy+(r()-.5)*spread,rx=1+r()*4;
-    x.beginPath();x.ellipse(px,py,rx*1.5,rx, r(),0,Math.PI*2);x.fillStyle="#302519";x.globalAlpha=.28+r()*.3;x.fill();
+   // A few gritty specks around each mud patch keep it from looking like a painted circle.
+   for(let j=0;j<5+Math.floor(r()*9);j++){
+    const px=cx+(r()-.5)*spread*2,py=cy+(r()-.5)*spread,rx=.7+r()*2.8;
+    x.beginPath();x.ellipse(px,py,rx*1.4,rx*.75,r(),0,Math.PI*2);x.fillStyle=r()>.5?"#302519":"#b19b73";x.globalAlpha=.12+r()*.25;x.fill();
    }
+  }
+  // Occasionally one larger smear crosses only one side of the stone.
+  if(coverage>.55){
+   const cx=r()*1024,cy=r()*512;
+   x.save();x.translate(cx,cy);x.rotate((r()-.5)*1.2);x.beginPath();x.ellipse(0,0,80+r()*95,18+r()*32,0,0,Math.PI*2);x.fillStyle="#4d3c28";x.globalAlpha=.24+r()*.18;x.fill();x.restore();
   }
  }
  x.globalAlpha=1;const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
 }
 function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
- const r=rng(seed),g=new THREE.SphereGeometry(1,rockStyle==="potatoLike"?96:36,rockStyle==="potatoLike"?64:28),p=g.attributes.position;
+ const r=rng(seed),g=new THREE.SphereGeometry(1,rockStyle==="potatoLike"?96:64,rockStyle==="potatoLike"?64:48),p=g.attributes.position;
  const eyes=[];
  if(kind==="potato")for(let k=0;k<15;k++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI;eyes.push({x:Math.cos(b)*Math.cos(a),y:Math.sin(b),z:Math.cos(b)*Math.sin(a),size:.035+r()*.045,depth:.018+r()*.035})}
  for(let i=0;i<p.count;i++){
@@ -89,12 +100,12 @@ function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
     n=1+Math.sin(x*4.4+seed*.01)*Math.sin(y*4.1+z*2.2)*.038+Math.sin(z*5.2+x*3.5+seed*.03)*.022;
     const shoulder=1+.075*Math.sin(y*2.8+seed*.004);xx=x*n*shoulder;yy=y*n*.9;zz=z*n*.93;
    }else if(rockStyle==="layered"){
-    n=1+Math.sin(x*5.1+seed*.01)*Math.sin(y*3.7+z*2.2)*.06+Math.sin(z*9.5+x*4.7+seed*.03)*.045;
-    xx=x*n+.07*Math.sin(y*6+seed);yy=y*n+.055*Math.sin(x*8+seed);zz=z*n+.03*Math.sin(y*9+seed);
+    n=1+Math.sin(x*5.1+seed*.01)*Math.sin(y*3.7+z*2.2)*.038+Math.sin(z*9.5+x*4.7+seed*.03)*.024;
+    xx=x*n+.035*Math.sin(y*6+seed);yy=y*n+.028*Math.sin(x*8+seed);zz=z*n+.018*Math.sin(y*9+seed);
     // Keep the deformation continuous; quantizing coordinates creates ugly cubic stair-steps.
    }else{
-    n=1+Math.sin(x*4.4+seed*.01)*Math.sin(y*5.3+z*2.2)*.10+Math.sin(z*7.5+x*4.7+seed*.03)*.07;
-    xx=x*n+.06*Math.sin(y*7+seed);yy=y*n+.05*Math.sin(x*8+seed);zz=z*n+.035*Math.sin(x*5+z*6);
+    n=1+Math.sin(x*4.4+seed*.01)*Math.sin(y*5.3+z*2.2)*.055+Math.sin(z*7.5+x*4.7+seed*.03)*.035;
+    xx=x*n+.035*Math.sin(y*7+seed);yy=y*n+.03*Math.sin(x*8+seed);zz=z*n+.02*Math.sin(x*5+z*6);
     // Smooth vertex positions plus low polygon count give a natural faceted rock, not voxel blocks.
    }
   }
@@ -102,11 +113,11 @@ function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
   p.setXYZ(i,xx,yy,zz)
  }
  g.computeVertexNormals();
- const group=new THREE.Group(),tex=skinTexture(seed,kind,dirt,rockStyle),mat=new THREE.MeshStandardMaterial({map:tex,roughness:rockStyle==="potatoLike"?.97:.94,metalness:0,flatShading:kind==="rock"&&rockStyle!=="potatoLike"});
+ const group=new THREE.Group(),tex=skinTexture(seed,kind,dirt,rockStyle),mat=new THREE.MeshStandardMaterial({map:tex,roughness:rockStyle==="potatoLike"?.97:.94,metalness:0,flatShading:false});
  const mesh=new THREE.Mesh(g,mat);mesh.scale.set(kind==="rock"?(rockStyle==="potatoLike"?.98:.88):1.02,kind==="rock"?(rockStyle==="potatoLike"?.91:.83):.96,kind==="rock"?(rockStyle==="potatoLike"?.93:.88):.95);mesh.rotation.set(.14,(r()-.5)*.25,(r()-.5)*.35);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
  // Soil grains and small clods sit on top of the skin rather than reading as colour alone.
  const soilMat=new THREE.MeshStandardMaterial({color:"#4a3825",roughness:1});
- for(let i=0;i<Math.floor(dirt*(rockStyle==="potatoLike"?26:48));i++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI,rad=kind==="rock"?(rockStyle==="potatoLike"?.97:.91):1.01,rr=.009+r()*.026,clod=new THREE.Mesh(new THREE.IcosahedronGeometry(rr,1),soilMat);clod.position.set(Math.cos(b)*Math.cos(a)*rad,Math.sin(b)*rad,Math.cos(b)*Math.sin(a)*rad);clod.scale.set(1.25,.7,.8);clod.castShadow=true;group.add(clod)}
+ for(let i=0;i<Math.floor(dirt*(rockStyle==="potatoLike"?8:18));i++){const a=r()*Math.PI*2,b=(r()-.5)*Math.PI,rad=kind==="rock"?(rockStyle==="potatoLike"?.97:.91):1.01,rr=.006+r()*.014,clod=new THREE.Mesh(new THREE.IcosahedronGeometry(rr,1),soilMat);clod.position.set(Math.cos(b)*Math.cos(a)*rad,Math.sin(b)*rad,Math.cos(b)*Math.sin(a)*rad);clod.scale.set(1.25,.7,.8);clod.castShadow=true;group.add(clod)}
  if(sprout){const sm=new THREE.MeshStandardMaterial({color:"#667044",roughness:.9});const stem=new THREE.Mesh(new THREE.ConeGeometry(.045,.16,7),sm);stem.position.set(.08,.91,.08);stem.rotation.z=-.45;stem.castShadow=true;group.add(stem)}
  return group;
 }
