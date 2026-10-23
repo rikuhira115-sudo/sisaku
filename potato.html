@@ -6,76 +6,56 @@
 <meta name="theme-color" content="#17130c">
 <title>じゃがいも鑑定士 | ゲーム王国</title>
 <style>
-:root{color-scheme:dark;--bg:#17130c;--panel:#272014;--gold:#f6c85f;--cream:#fff3d1;--muted:#b9a982;--red:#ff7777;--green:#9de6a6}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#45341b 0,#211a10 45%,#100e0a 100%);color:var(--cream);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding:16px 12px 28px}
-.wrap{width:min(100%,560px)}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.back{color:var(--muted);text-decoration:none;font-size:.9rem;border:1px solid #55452a;border-radius:12px;padding:8px 11px}.brand{font-size:.75rem;color:var(--muted);letter-spacing:.12em}
-h1{text-align:center;font-size:clamp(1.8rem,8vw,2.7rem);margin:12px 0 4px;letter-spacing:.04em;color:var(--gold);text-shadow:0 3px #684718}.sub{text-align:center;color:var(--muted);margin:0 0 18px;font-size:.9rem}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stat{background:#211b11;border:1px solid #55452a;border-radius:14px;text-align:center;padding:9px 5px}.stat small{display:block;color:var(--muted);font-size:.72rem}.stat strong{display:block;font-size:1.3rem;color:var(--gold);font-variant-numeric:tabular-nums}
-.panel{background:linear-gradient(160deg,#302516,#20190f);border:2px solid #6a512d;border-radius:22px;padding:16px;box-shadow:0 12px 32px #0006}.progress{height:7px;background:#17130c;border-radius:99px;overflow:hidden;margin-bottom:14px}.bar{height:100%;width:100%;background:linear-gradient(90deg,#a8d879,#f6c85f);transition:width .2s}
-.prompt{text-align:center;color:var(--muted);font-size:.82rem;margin:2px 0 8px}.object{height:190px;display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:17px;background:radial-gradient(circle,#4a371c,#241b10 68%);border:1px dashed #806237;margin-bottom:12px;position:relative;overflow:hidden}.emoji{font-size:clamp(5rem,24vw,7.2rem);filter:drop-shadow(0 8px 2px #0005);line-height:1.2;user-select:none}.itemname{color:#d9c79d;font-size:.82rem;margin-top:8px}.stamp{position:absolute;top:10px;right:10px;border-radius:99px;padding:4px 8px;background:#17130c;color:var(--gold);font-size:.68rem;border:1px solid #66502e}
-.question{text-align:center;font-weight:800;margin:12px 0 10px;font-size:1.02rem}.answers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.answer{min-height:66px;border:1px solid #70552d;border-radius:14px;background:#3a2b17;color:var(--cream);font-weight:900;font-size:.9rem;padding:8px 4px;touch-action:manipulation;cursor:pointer;transition:transform .08s,background .15s}.answer:active{transform:scale(.96)}.answer:disabled{opacity:.55}.answer span{display:block;font-size:1.25rem;margin-bottom:3px}
-.feedback{height:30px;text-align:center;font-weight:900;margin:9px 0 0;font-size:.96rem}.feedback.good{color:var(--green)}.feedback.bad{color:var(--red)}
-.note{text-align:center;color:var(--muted);font-size:.76rem;line-height:1.6;margin:14px 6px 0}.overlay{position:fixed;inset:0;background:#090805d9;display:flex;align-items:center;justify-content:center;padding:18px;z-index:5}.modal{width:min(100%,430px);background:#261e12;border:2px solid #806237;border-radius:24px;padding:24px;text-align:center;box-shadow:0 20px 60px #0009}.modal .big{font-size:3.5rem}.modal h2{color:var(--gold);margin:8px 0}.modal p{color:#d5c49d;line-height:1.7}.primary{width:100%;border:0;border-radius:14px;padding:14px;background:linear-gradient(#ffda79,#e9a93f);color:#30200a;font-size:1.02rem;font-weight:1000;cursor:pointer;margin-top:8px}.secondary{display:inline-block;color:var(--muted);margin-top:14px;text-decoration:none;font-size:.88rem}.hidden{display:none!important}.tip{font-size:.76rem;color:#a9956c;margin-top:14px;text-align:center}
-@media(min-width:500px){.panel{padding:20px}.object{height:220px}.answers{gap:10px}.answer{font-size:1rem}}
+:root{color-scheme:dark;--bg:#17130c;--gold:#f6c85f;--cream:#fff3d1;--muted:#b9a982;--green:#a7efaa;--red:#ff8585}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#49371d,#21190f 48%,#100e0a);color:var(--cream);font-family:system-ui,-apple-system,sans-serif;display:flex;justify-content:center;padding:14px 12px 28px;overflow-x:hidden}.wrap{width:min(100%,520px)}.top{display:flex;justify-content:space-between;align-items:center}.back{color:var(--muted);text-decoration:none;font-size:.9rem;border:1px solid #55452a;border-radius:12px;padding:8px 11px}.brand{font-size:.7rem;color:var(--muted);letter-spacing:.12em}h1{text-align:center;font-size:clamp(1.8rem,8vw,2.5rem);margin:15px 0 3px;color:var(--gold);text-shadow:0 3px #684718}.sub{text-align:center;color:var(--muted);margin:0 0 16px;font-size:.88rem}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stat{background:#211b11;border:1px solid #55452a;border-radius:14px;text-align:center;padding:8px 4px}.stat small{display:block;color:var(--muted);font-size:.7rem}.stat strong{display:block;font-size:1.3rem;color:var(--gold);font-variant-numeric:tabular-nums}.panel{background:linear-gradient(160deg,#302516,#20190f);border:2px solid #6a512d;border-radius:22px;padding:14px;box-shadow:0 12px 32px #0006}.progress{height:7px;background:#17130c;border-radius:99px;overflow:hidden;margin-bottom:12px}.bar{height:100%;width:100%;background:linear-gradient(90deg,#a8d879,#f6c85f);transition:width .2s}.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.78rem;margin:0 2px 9px}.arena{position:relative;height:clamp(240px,58vw,330px);max-height:330px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:18px;background:radial-gradient(ellipse,#4a371c,#241b10 70%);border:1px solid #806237;touch-action:pan-y;user-select:none}.arena:before{content:"";position:absolute;width:190px;height:190px;border-radius:50%;background:var(--glow,#d5a54b);opacity:.12;filter:blur(34px)}.object{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;flex-direction:column;cursor:grab;touch-action:pan-y;transition:transform .16s,opacity .16s}.object.dragging{transition:none;cursor:grabbing}.emoji{font-size:clamp(7rem,34vw,10rem);line-height:1.1;filter:drop-shadow(0 14px 5px #0007) var(--filter,none);transform:rotate(var(--tilt,0deg)) scale(var(--scale,1));transition:filter .2s}.shine{position:absolute;top:16px;left:16px;border:1px solid #8b6c39;background:#1b150dcf;color:var(--gold);padding:5px 9px;border-radius:99px;font-size:.7rem}.look{position:absolute;bottom:15px;color:#e0cca0;background:#17130cbf;border:1px solid #55452a;padding:6px 11px;border-radius:99px;font-size:.78rem}.swipe-hint{display:flex;justify-content:space-between;gap:8px;margin:12px 0 6px}.hint{flex:1;text-align:center;border-radius:12px;padding:9px 4px;font-size:.82rem;font-weight:800}.hint.left{background:#173522;color:#a7efaa;border:1px solid #3e8050}.hint.right{background:#42211d;color:#ffaaaa;border:1px solid #8a4941}.hint small{display:block;font-size:.67rem;font-weight:500;opacity:.8}.instruction{text-align:center;color:var(--muted);font-size:.78rem;margin:9px 0 12px}.buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.decision{border:0;border-radius:15px;padding:13px 8px;font-weight:900;font-size:1rem;cursor:pointer;touch-action:manipulation;box-shadow:0 4px #0005}.decision:active{transform:translateY(2px);box-shadow:0 2px #0005}.yes{background:linear-gradient(#b6f5b8,#6bc97b);color:#15321b}.no{background:linear-gradient(#ffb0a2,#df685c);color:#3d1713}.feedback{height:29px;text-align:center;font-weight:900;margin:8px 0 0;font-size:.95rem}.good{color:var(--green)}.bad{color:var(--red)}.note{text-align:center;color:var(--muted);font-size:.74rem;line-height:1.6;margin:13px 5px}.overlay{position:fixed;inset:0;background:#090805df;display:flex;align-items:center;justify-content:center;padding:18px;z-index:5}.modal{width:min(100%,420px);background:#261e12;border:2px solid #806237;border-radius:24px;padding:24px;text-align:center;box-shadow:0 20px 60px #0009}.big{font-size:3.6rem}.modal h2{color:var(--gold);margin:8px 0}.modal p{color:#d5c49d;line-height:1.75;font-size:.94rem}.primary{width:100%;border:0;border-radius:14px;padding:14px;background:linear-gradient(#ffda79,#e9a93f);color:#30200a;font-size:1rem;font-weight:1000;cursor:pointer;margin-top:8px}.secondary{display:inline-block;color:var(--muted);margin-top:14px;text-decoration:none;font-size:.88rem}.hidden{display:none!important}
+@media(min-width:500px){.panel{padding:18px}.arena{height:320px}}
 </style>
 </head>
 <body>
 <div class="wrap">
  <div class="top"><a class="back" href="index.html">← ゲーム王国</a><div class="brand">KINGDOM OF GAMES</div></div>
- <h1>🥔 じゃがいも鑑定士</h1><p class="sub">その物体、本当にじゃがいもですか？</p>
- <div class="stats"><div class="stat"><small>鑑定スコア</small><strong id="score">0</strong></div><div class="stat"><small>連続正解</small><strong id="streak">0</strong></div><div class="stat"><small>残りミス</small><strong id="lives">❤️❤️❤️</strong></div></div>
+ <h1>🥔 じゃがいも鑑定士</h1><p class="sub">見た目にだまされるな。芋を見抜け！</p>
+ <div class="stats"><div class="stat"><small>スコア</small><strong id="score">0</strong></div><div class="stat"><small>連続正解</small><strong id="streak">0</strong></div><div class="stat"><small>残りミス</small><strong id="lives">❤️❤️❤️</strong></div></div>
  <main class="panel">
   <div class="progress"><div class="bar" id="bar"></div></div>
-  <div class="prompt" id="level">鑑定レベル 1</div>
-  <div class="object"><span class="stamp" id="rarity">通常案件</span><div class="emoji" id="emoji">🥔</div><div class="itemname" id="itemname">標準的なじゃがいも</div></div>
-  <div class="question">この物体の正体を鑑定せよ！</div>
-  <div class="answers">
-   <button class="answer" data-answer="potato"><span>🥔</span>じゃがいも</button>
-   <button class="answer" data-answer="sweet"><span>🍠</span>サツマイモ</button>
-   <button class="answer" data-answer="other"><span>🔎</span>その他</button>
-  </div>
+  <div class="meta"><span id="level">鑑定レベル 1</span><span id="time">60秒</span></div>
+  <div class="arena" id="arena"><div class="object" id="object"><span class="shine" id="rarity">鑑定対象 #001</span><div class="emoji" id="emoji">🥔</div><div class="look" id="look">よく観察しよう</div></div></div>
+  <div class="swipe-hint"><div class="hint left">← 左へフリック<small>🥔 じゃがいも！</small></div><div class="hint right">右へフリック →<small>🪨 じゃがいも以外</small></div></div>
+  <p class="instruction">カードを左右にフリック！ 下のボタンでも遊べるよ</p>
+  <div class="buttons"><button class="decision yes" id="potatoBtn">← じゃがいも</button><button class="decision no" id="otherBtn">それ以外 →</button></div>
   <div class="feedback" id="feedback" aria-live="polite"></div>
  </main>
- <p class="note">ミスは3回まで。正解するほど鑑定スピードが上昇！<br>鑑定士の誇りを胸に、目の前の物体を見極めよう。</p>
- <div class="tip">※このゲームに登場する鑑定基準は、王国独自のものです。</div>
+ <p class="note">60秒で何個見抜ける？ ミスは3回まで。<br>芋の色・形・柄は毎回変化！金色やレインボーの激レア芋も登場。</p>
 </div>
-<div class="overlay" id="overlay"><div class="modal"><div class="big">🥔</div><h2 id="modalTitle">鑑定士、着任。</h2><p id="modalText">じゃがいもと、それ以外。<br>違いがわかる鑑定士を目指せ！<br><br>正解でスコア獲得。3回ミスすると終了。</p><button class="primary" id="start">鑑定を開始する</button><a class="secondary" href="index.html">ゲーム一覧に戻る</a></div></div>
+<div class="overlay" id="overlay"><div class="modal"><div class="big">🥔✨</div><h2 id="modalTitle">芋の真実を見抜け！</h2><p id="modalText">左にフリック＝じゃがいも。右にフリック＝それ以外。<br><br>石、サツマイモ、変な色の芋……見た目に惑わされず鑑定しよう！<br>制限時間60秒、ミス3回で終了。</p><button class="primary" id="start">鑑定開始！</button><a class="secondary" href="index.html">ゲーム一覧に戻る</a></div></div>
 <script>
 const $=id=>document.getElementById(id);
 const items=[
- {e:"🥔",n:"標準的なじゃがいも",a:"potato",r:"通常案件",min:1},
- {e:"🍠",n:"ほくほくのサツマイモ",a:"sweet",r:"通常案件",min:1},
- {e:"🪨",n:"道端で見つけた石",a:"other",r:"通常案件",min:1},
- {e:"🥔",n:"ちょっと丸いじゃがいも",a:"potato",r:"通常案件",min:1},
- {e:"🍟",n:"フライドポテト",a:"other",r:"加工品",min:2},
- {e:"🍪",n:"クッキー",a:"other",r:"お菓子案件",min:2},
- {e:"🥔🕶️",n:"サングラスをかけた芋",a:"potato",r:"特殊個体",min:2},
- {e:"🌰",n:"栗",a:"other",r:"木の実案件",min:2},
- {e:"🥕",n:"ニンジン",a:"other",r:"野菜案件",min:2},
- {e:"🍞",n:"パン",a:"other",r:"加工品",min:2},
- {e:"🍆",n:"ナス",a:"other",r:"野菜案件",min:3},
- {e:"🥔👑",n:"王冠をかぶったじゃがいも",a:"potato",r:"王族案件",min:3},
- {e:"🧅",n:"タマネギ",a:"other",r:"野菜案件",min:3},
- {e:"🍮",n:"プリン",a:"other",r:"デザート案件",min:3},
- {e:"🍠✨",n:"やたら輝くサツマイモ",a:"sweet",r:"レア案件",min:3},
- {e:"🥔💼",n:"出勤中のじゃがいも",a:"potato",r:"社会人案件",min:4},
- {e:"🧽",n:"じゃがいもに似たスポンジ",a:"other",r:"紛らわしい案件",min:4},
- {e:"🥔💎",n:"宝石を抱えたじゃがいも",a:"potato",r:"超レア案件",min:4},
- {e:"🍊",n:"みかん",a:"other",r:"果物案件",min:4},
- {e:"🍙",n:"おにぎり",a:"other",r:"加工品",min:4},
- {e:"🥔❓",n:"自分が何者か悩むじゃがいも",a:"potato",r:"哲学案件",min:5},
- {e:"🧸",n:"じゃがいもではないぬいぐるみ",a:"other",r:"罠案件",min:5},
- {e:"🍠🎩",n:"紳士的なサツマイモ",a:"sweet",r:"紳士案件",min:5},
- {e:"🥔🪽",n:"羽の生えたじゃがいも",a:"potato",r:"神話案件",min:6}
+ {e:"🥔",n:"ふつうのじゃがいも",a:1},{e:"🪨",n:"ただの石",a:0},{e:"🍠",n:"サツマイモ",a:0},{e:"🥔",n:"むらさき芋？",a:1},{e:"🥔",n:"小さな新じゃが",a:1},{e:"🧅",n:"タマネギ",a:0},{e:"🥔",n:"ごつごつ芋",a:1},{e:"🥥",n:"ココナッツ",a:0},{e:"🍅",n:"トマト",a:0},{e:"🥔",n:"まんまる芋",a:1},{e:"🪵",n:"木のかけら",a:0},{e:"🍪",n:"クッキー",a:0},{e:"🥔",n:"ちょっと長い芋",a:1},{e:"🥕",n:"ニンジン",a:0},{e:"🥔",n:"芽が出そうな芋",a:1},{e:"⚽",n:"ボール",a:0},{e:"🥔",n:"王様のじゃがいも",a:1},{e:"🍋",n:"レモン",a:0},{e:"🥔",n:"しわしわ芋",a:1},{e:"🧽",n:"スポンジ",a:0},{e:"🥔",n:"宝石みたいな芋",a:1},{e:"🍞",n:"パン",a:0},{e:"🥔",n:"宇宙から来た芋",a:1},{e:"🧸",n:"ぬいぐるみ",a:0},{e:"🥔",n:"双子のじゃがいも",a:1},{e:"🌰",n:"栗",a:0},{e:"🥔",n:"古代のじゃがいも",a:1},{e:"🪨",n:"芋っぽい石",a:0},{e:"🥔",n:"伝説の黄金芋",a:1},{e:"🍆",n:"ナス",a:0}
 ];
-let score=0,streak=0,lives=3,level=1,round=0,locked=false,playing=false,timer=null,remaining=60,best=Number(localStorage.getItem("potatoBest")||0),current=null;
-function pickItem(){const pool=items.filter(x=>x.min<=level);let item=pool[Math.floor(Math.random()*pool.length)];if(current&&pool.length>1){let tries=0;while(item===current&&tries++<8)item=pool[Math.floor(Math.random()*pool.length)]}return item}
-function showItem(){current=pickItem();$("emoji").textContent=current.e;$("itemname").textContent=current.n;$("rarity").textContent=current.r;$("level").textContent="鑑定レベル "+level;$("feedback").textContent="";$("feedback").className="feedback";document.querySelectorAll(".answer").forEach(b=>b.disabled=false);locked=false}
-function update(){ $("score").textContent=score;$("streak").textContent=streak;$("lives").textContent="❤️".repeat(lives)+"🖤".repeat(3-lives);$("bar").style.width=Math.max(0,remaining/60*100)+"%";$("level").textContent="鑑定レベル "+level+" ・ 残り "+remaining+"秒"}
-function startGame(){score=0;streak=0;lives=3;level=1;round=0;remaining=60;playing=true;$("overlay").classList.add("hidden");update();showItem();clearInterval(timer);timer=setInterval(()=>{remaining--;update();if(remaining<=0)endGame("時間切れ！")},1000)}
-function answer(value){if(!playing||locked)return;locked=true;document.querySelectorAll(".answer").forEach(b=>b.disabled=true);round++;const fb=$("feedback");if(value===current.a){streak++;const gain=10+Math.min(streak-1,10)*2;score+=gain;level=1+Math.floor(round/5);fb.textContent=["鑑定成功！ +"+gain,"見事な目利き！ +"+gain,"じゃがいも界も納得！ +"+gain,"その鑑定、間違いなし！ +"+gain][Math.floor(Math.random()*4)];fb.className="feedback good"}else{lives--;streak=0;fb.textContent="鑑定ミス！ 正解は「"+({potato:"じゃがいも",sweet:"サツマイモ",other:"その他"})[current.a]+"」";fb.className="feedback bad"}update();if(lives<=0){setTimeout(()=>endGame("鑑定ミスが3回に達しました"),650);return}setTimeout(()=>{if(playing)showItem()},480)}
-function endGame(reason){if(!playing)return;playing=false;clearInterval(timer);if(score>best){best=score;localStorage.setItem("potatoBest",String(best))}$("modalTitle").textContent="鑑定終了！";$("modalText").innerHTML=reason+"<br><br>今回のスコア：<b>"+score+"点</b><br>最高記録："+best+"点<br>到達レベル："+level+"<br><br>"+(score>=300?"伝説の芋鑑定士！":score>=150?"一流鑑定士まであと少し！":"鑑定士への道は長い……");$("start").textContent="もう一度鑑定する";$("overlay").classList.remove("hidden")}
-document.querySelectorAll(".answer").forEach(b=>b.addEventListener("click",()=>answer(b.dataset.answer)));$("start").addEventListener("click",startGame);
+const filters=[
+ {name:"土つきブラウン",filter:"sepia(.5) saturate(1.3) hue-rotate(-8deg)",glow:"#d7a35a"},
+ {name:"むらさきカラー",filter:"hue-rotate(65deg) saturate(1.5)",glow:"#b16cff"},
+ {name:"ミントカラー",filter:"hue-rotate(115deg) saturate(1.35)",glow:"#70ffb2"},
+ {name:"あざやかレッド",filter:"hue-rotate(300deg) saturate(1.8)",glow:"#ff5c78"},
+ {name:"アイスブルー",filter:"hue-rotate(170deg) saturate(1.4)",glow:"#62cfff"},
+ {name:"黄金カラー",filter:"sepia(1) saturate(2.2) hue-rotate(350deg) brightness(1.2)",glow:"#ffd34e"},
+ {name:"レインボー風",filter:"hue-rotate(220deg) saturate(2.4)",glow:"#ff7be8"},
+ {name:"モノクロ",filter:"grayscale(1) contrast(1.25)",glow:"#eeeeee"},
+ {name:"ネオンカラー",filter:"hue-rotate(250deg) saturate(2.8) brightness(1.15)",glow:"#9a72ff"}
+];
+let score=0,streak=0,lives=3,level=1,round=0,playing=false,locked=false,remaining=60,timer=null,current=null,best=Number(localStorage.getItem("potatoSwipeBest")||0),startX=0,startY=0,dragX=0;
+function update(){ $("score").textContent=score;$("streak").textContent=streak;$("lives").textContent="❤️".repeat(lives)+"🖤".repeat(3-lives);$("time").textContent=remaining+"秒";$("level").textContent="鑑定レベル "+level;$("bar").style.width=(remaining/60*100)+"%"}
+function nextItem(){let item;do{item=items[Math.floor(Math.random()*items.length)]}while(item===current);current=item;const f=filters[Math.floor(Math.random()*filters.length)];$("emoji").textContent=item.e;$("emoji").style.setProperty("--filter",f.filter);$("arena").style.setProperty("--glow",f.glow);$("emoji").style.setProperty("--tilt",(Math.random()*34-17)+"deg");$("emoji").style.setProperty("--scale",(0.78+Math.random()*.48).toFixed(2));$("look").textContent=f.name;$("rarity").textContent="鑑定対象 #"+String(round+1).padStart(3,"0");$("object").style.transform="translateX(0) rotate(0)";$("object").style.opacity="1";$("feedback").textContent="";$("feedback").className="feedback";locked=false}
+function startGame(){score=0;streak=0;lives=3;level=1;round=0;remaining=60;playing=true;locked=false;$("overlay").classList.add("hidden");update();nextItem();clearInterval(timer);timer=setInterval(()=>{remaining--;update();if(remaining<=0)endGame("時間切れ！")},1000)}
+function decide(isPotato){if(!playing||locked)return;locked=true;round++;const obj=$("object"),fb=$("feedback");obj.style.transform="translateX("+(isPotato?-520:520)+"px) rotate("+(isPotato?-25:25)+"deg)";obj.style.opacity=".2";if(isPotato===!!current.a){streak++;const points=10+Math.min(streak-1,15)*2+Math.floor(level/2);score+=points;fb.textContent=["鑑定成功！ +"+points,"芋の目利き！ +"+points,"その判断、正解！ +"+points,"見事に見抜いた！ +"+points][Math.floor(Math.random()*4)];fb.className="feedback good";level=1+Math.floor(round/8)}else{lives--;streak=0;fb.textContent="鑑定ミス！ それは"+(current.a?"じゃがいも！":"じゃがいも以外！");fb.className="feedback bad"}update();if(lives<=0){setTimeout(()=>endGame("鑑定ミスが3回に達しました"),260);return}setTimeout(()=>{if(playing)nextItem()},190)}
+function endGame(reason){if(!playing)return;playing=false;clearInterval(timer);if(score>best){best=score;localStorage.setItem("potatoSwipeBest",String(best))}$("modalTitle").textContent="鑑定終了！";$("modalText").innerHTML=reason+"<br><br>スコア：<b>"+score+"点</b><br>最高記録："+best+"点<br>鑑定数："+round+"個<br>到達レベル："+level+"<br><br>"+(score>=350?"伝説の芋鑑定士！":score>=180?"かなりの目利き！":"芋の道は奥深い……");$("start").textContent="もう一度挑戦";$("overlay").classList.remove("hidden")}
+$("start").addEventListener("click",startGame);$("potatoBtn").addEventListener("click",()=>decide(true));$("otherBtn").addEventListener("click",()=>decide(false));
+const arena=$("arena"),object=$("object");
+arena.addEventListener("pointerdown",e=>{if(!playing||locked)return;startX=e.clientX;startY=e.clientY;dragX=0;object.classList.add("dragging");try{arena.setPointerCapture(e.pointerId)}catch(_){}});
+arena.addEventListener("pointermove",e=>{if(!playing||locked||!object.classList.contains("dragging"))return;dragX=e.clientX-startX;object.style.transform="translateX("+dragX+"px) rotate("+(dragX/16)+"deg)";object.style.opacity=String(Math.max(.45,1-Math.abs(dragX)/500))});
+function release(){if(!object.classList.contains("dragging"))return;object.classList.remove("dragging");if(Math.abs(dragX)>55){decide(dragX<0)}else{object.style.transform="translateX(0) rotate(0)";object.style.opacity="1"}dragX=0}
+arena.addEventListener("pointerup",release);arena.addEventListener("pointercancel",release);
 </script>
 </body>
 </html>
