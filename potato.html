@@ -13,6 +13,12 @@
 .hudstat .unit{font-size:.72em;color:#ddcba8}
 #timeTrack{height:6px;border:1px solid #8c765277;border-radius:99px;background:#231a10d9;margin-top:6px;overflow:hidden}
 #timeFill{height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,#c7d27c,#e4b85d,#dc694a);transition:width .12s linear}
+#timeFill.urgent{background:linear-gradient(90deg,#ffb06f,#ff4d3e);animation:timepulse .65s ease-in-out infinite alternate}
+@keyframes timepulse{from{opacity:.72}to{opacity:1}}
+#comboLine{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;padding:0 3px;color:#bca98a;font-size:10px;font-weight:800;letter-spacing:.02em}
+#comboText{color:#ffe0a0;font-size:11px}
+#comboText.hot{color:#ffbf62}
+.endrank{font-size:15px;font-weight:900;color:#e9ca8e;letter-spacing:.04em;margin:4px 0}
 #endPanel{position:fixed;z-index:8;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:#100c09bb;backdrop-filter:blur(7px);font-family:system-ui,sans-serif;color:#f6e9ce}
 #endPanel.show{display:flex}.endcard{width:min(100%,370px);padding:26px 22px;border:1px solid #b49a6a;border-radius:24px;background:linear-gradient(145deg,#493723f5,#21180ff5);text-align:center;box-shadow:0 20px 70px #0009}
 .endeyebrow{color:#d6b980;font-weight:900;letter-spacing:.14em;font-size:12px}.endtitle{font-size:30px;font-weight:1000;margin:8px 0}.endscore{font-size:42px;font-weight:1000;color:#ffe0a0;line-height:1.2}.endmeta{color:#d9c9ab;font-size:14px;line-height:1.8;margin:12px 0 20px}
@@ -27,9 +33,9 @@
 <div class="hudstat"><span>残り時間</span><b id="timeText">45.0<span class="unit">秒</span></b></div>
 <div class="hudstat"><span>今回の売上</span><b id="scoreText">¥0</b></div>
 <div class="hudstat"><span>カゴに入れた数</span><b><span id="countText">0</span><span class="unit">個</span></b></div>
-</div><div id="timeTrack"><div id="timeFill"></div></div></div>
+</div><div id="timeTrack"><div id="timeFill"></div></div><div id="comboLine"><span>連続成功で査定アップ</span><b id="comboText">COMBO 0 · ×1.0</b></div></div>
 <div id="hint">ドラッグして、勢いよくカゴへ！石はカゴの外へ</div>
-<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endscore" id="endScore">¥0</div><div class="endstats" id="endMeta"><div class="endrow"><span>今回の売上</span><strong>¥0</strong></div></div><button id="restartBtn">もう一度挑戦</button></div></div>
+<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endrank" id="endRank">畑の見習い</div><div class="endscore" id="endScore">¥0</div><div class="endstats" id="endMeta"><div class="endrow"><span>今回の売上</span><strong>¥0</strong></div></div><button id="restartBtn">もう一度挑戦</button></div></div>
 <div class="fatal" id="fatal" hidden><div class="fatal-card"><strong>3D空間を準備できませんでした</strong><br><span id="fatalText">通信を確認して、もう一度試してください。</span><br><button onclick="location.reload()">再読み込み</button></div></div>
 <script>
 window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const urls=["https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js","https://unpkg.com/three@0.160.0/build/three.min.js"];let index=0,finished=false;function attempt(){if(finished)return;if(window.THREE){finished=true;done(true);return}if(index>=urls.length){finished=true;done(false);return}const s=document.createElement("script");s.src=urls[index++];let timer=setTimeout(()=>{if(!window.THREE){s.remove();attempt()}},6000);s.onload=()=>{clearTimeout(timer);if(window.THREE){finished=true;done(true)}else attempt()};s.onerror=()=>{clearTimeout(timer);attempt()};document.head.appendChild(s)}attempt()};
@@ -37,15 +43,15 @@ window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const 
 <script>
 (()=>{
 const canvas=document.getElementById("world");
-let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,noticeTimer=0,best=Number(localStorage.getItem("potato3dBest")||0),velocity,physics=false,gameSeconds=30,lastFrame=0,objectResolved=false,particles=[],basketPulse=0;
+let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,noticeTimer=0,best=Number(localStorage.getItem("potato3dBest")||0),velocity,physics=false,gameSeconds=30,lastFrame=0,objectResolved=false,particles=[],basketPulse=0,streak=0,bestStreak=0,sortedCount=0,goldCount=0,miniPotatoGeometry=null,miniPotatoMaterial=null,objectShadow=null,basketShadow=null;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function skinTexture(seed,kind,dirt,rockStyle="angular"){
  const r=rng(seed),c=document.createElement("canvas");c.width=1024;c.height=512;const x=c.getContext("2d");
- const base=kind==="rock"?(rockStyle==="potatoLike"?"#77756b":rockStyle==="layered"?"#77776d":"#69675f"):"#98774d";x.fillStyle=base;x.fillRect(0,0,1024,512);
+ const base=kind==="rock"?(rockStyle==="potatoLike"?"#77756b":rockStyle==="layered"?"#77776d":"#69675f"):"#8d623b";x.fillStyle=base;x.fillRect(0,0,1024,512);
  for(let i=0;i<130;i++){const px=r()*1024,py=r()*512,rx=8+r()*75,ry=4+r()*28;x.beginPath();x.ellipse(px,py,rx,ry,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?"#d2b58a":"#473421";x.globalAlpha=.025+r()*.075;x.fill()}
- const g=x.createLinearGradient(0,0,850,512);g.addColorStop(0,kind==="potato"?"#c4a06a":"#c4a477");g.addColorStop(.25,base);g.addColorStop(.7,kind==="rock"?(rockStyle==="potatoLike"?"#4e493e":rockStyle==="layered"?"#50534e":"#4d4b47"):"#755234");g.addColorStop(1,kind==="potato"?"#594027":"#3c3022");x.globalAlpha=.35;x.fillStyle=g;x.fillRect(0,0,1024,512);x.globalAlpha=1;
- const grainCount=kind==="potato"?1900:1450;
+ const g=x.createLinearGradient(0,0,850,512);g.addColorStop(0,kind==="potato"?"#c29a61":"#c4a477");g.addColorStop(.25,base);g.addColorStop(.7,kind==="rock"?(rockStyle==="potatoLike"?"#4e493e":rockStyle==="layered"?"#50534e":"#4d4b47"):"#67472e");g.addColorStop(1,kind==="potato"?"#4e331e":"#3c3022");x.globalAlpha=.35;x.fillStyle=g;x.fillRect(0,0,1024,512);x.globalAlpha=1;
+ const grainCount=kind==="potato"?1500:1100;
  for(let i=0;i<grainCount;i++){const px=r()*1024,py=r()*512,rr=kind==="potato"?.22+r()*.95:.25+r()*1.4;x.beginPath();x.ellipse(px,py,rr*(.6+r()),rr,r()*Math.PI,0,Math.PI*2);x.fillStyle=r()>.5?(kind==="potato"?"#4c3422":"#30261b"):(kind==="potato"?"#e1c392":"#dfc59a");x.globalAlpha=kind==="potato"?.035+r()*.105:.06+r()*.2;x.fill()}
  if(kind==="potato"){
   // Real tubers vary by cultivar; use subtle ochre / amber / russet mottling, not large painted blotches.
@@ -152,20 +158,8 @@ function createSpecimen(seed,kind,dirt,sprout,rockStyle="angular"){
  const potZ=kind==="potato"?.90+r()*.12:(rockStyle==="potatoLike"?.93:.88);
  mesh.scale.set(potX,potY,potZ);mesh.rotation.set(.14,(r()-.5)*.25,(r()-.5)*.35);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
  if(kind==="potato"){
-  // Model the potato's eyes as small recessed marks with a softer raised rim, placed over the matching dents.
-  const rimMat=new THREE.MeshStandardMaterial({color:"#b99b6b",roughness:1});
-  const pitMat=new THREE.MeshStandardMaterial({color:"#4b301c",roughness:1});
-  for(const e of eyes){
-   const normal=new THREE.Vector3(e.x,e.y,e.z).normalize();
-   const eyeGroup=new THREE.Group();
-   eyeGroup.position.copy(normal).multiplyScalar(1-e.depth*.65);
-   eyeGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
-   const rim=new THREE.Mesh(new THREE.TorusGeometry(e.size*.78,e.size*.12,5,14),rimMat);
-   rim.scale.set(1,.78,1);rim.position.z=.003;eyeGroup.add(rim);
-   const pit=new THREE.Mesh(new THREE.SphereGeometry(e.size*.48,10,7),pitMat);
-   pit.scale.set(1,.68,.22);pit.position.z=.004;eyeGroup.add(pit);
-   mesh.add(eyeGroup);
-  }
+  // True shallow dents are carved into the potato geometry and textured as small dark eyes.
+  // Avoid detached eye meshes: they can look like floating rings and cost a lot on mobile.
  }
  // Soil grains and small clods sit on top of the skin rather than reading as colour alone.
  const soilMat=new THREE.MeshStandardMaterial({color:"#4a3825",roughness:1});
@@ -200,10 +194,29 @@ function showNotice(main,sub){
 }
 function showFatal(message){const box=document.getElementById("fatal");document.getElementById("fatalText").textContent=message;box.hidden=false}
 function disposeObject(o){o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){const ms=Array.isArray(n.material)?n.material:[n.material];ms.forEach(m=>{if(m.map)m.map.dispose();m.dispose()})}})}
+function makeMiniPotatoAssets(){
+ if(miniPotatoGeometry&&miniPotatoMaterial)return;
+ const geo=new THREE.SphereGeometry(1,22,14),p=geo.attributes.position;
+ for(let i=0;i<p.count;i++){
+  const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+  const wave=1+.065*Math.sin(y*3.1)+.035*Math.sin(x*4.2+z*2.5)+.02*Math.sin(z*6.5-y*1.8);
+  p.setXYZ(i,x*wave*(1+.045*Math.sin(y*2.2)),y*(.93+.035*Math.sin(x*4)),z*wave);
+ }
+ geo.computeVertexNormals();miniPotatoGeometry=geo;
+ const cv=document.createElement("canvas");cv.width=256;cv.height=128;const x=cv.getContext("2d");
+ const grad=x.createLinearGradient(0,0,200,128);grad.addColorStop(0,"#b58a53");grad.addColorStop(.45,"#8e6038");grad.addColorStop(1,"#50331f");x.fillStyle=grad;x.fillRect(0,0,256,128);
+ let s=3819;const rr=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
+ for(let i=0;i<450;i++){const px=rr()*256,py=rr()*128,r=.25+rr()*1.2;x.beginPath();x.ellipse(px,py,r*1.4,r,rr()*3,0,Math.PI*2);x.fillStyle=rr()>.5?"#4b301d":"#dbb47a";x.globalAlpha=.08+rr()*.13;x.fill()}
+ for(let i=0;i<12;i++){const px=rr()*256,py=rr()*128,r=1+rr()*2;x.beginPath();x.ellipse(px,py,r*2,r*1.5,rr(),0,Math.PI*2);x.fillStyle="#c4a06b";x.globalAlpha=.24;x.fill();x.beginPath();x.ellipse(px,py,r,r*.7,rr(),0,Math.PI*2);x.fillStyle="#452b1b";x.globalAlpha=.55;x.fill()}
+ x.globalAlpha=1;const tex=new THREE.CanvasTexture(cv);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=1;
+ miniPotatoMaterial=new THREE.MeshStandardMaterial({map:tex,roughness:.92});
+}
 function addPotatoToBasket(){
- const seed=Math.floor(Math.random()*9999999),p=createSpecimen(seed,"potato",.25+Math.random()*.3,false),n=bankedPotatoes.length;
- p.scale.setScalar(.235);p.position.set(((n%3)-1)*.24,-1.27+Math.floor(n/9)*.12,.15+((n%3)-1)*.12);
- p.rotation.set(Math.random()*.5,Math.random()*6,Math.random()*.5);scene.add(p);bankedPotatoes.push(p);
+ makeMiniPotatoAssets();
+ const n=bankedPotatoes.length,p=new THREE.Mesh(miniPotatoGeometry,miniPotatoMaterial);
+ const size=.17+Math.random()*.045;p.scale.set(size,size*(.83+Math.random()*.18),size*(.88+Math.random()*.2));
+ p.position.set(((n%3)-1)*.24,-1.27+Math.floor(n/9)*.12,.15+((n%3)-1)*.12);
+ p.rotation.set(Math.random()*.5,Math.random()*6,Math.random()*.5);p.castShadow=false;scene.add(p);bankedPotatoes.push(p);
 }
 function burstParticles(pos,palette,count=16,power=1){
  if(!scene)return;
@@ -217,8 +230,8 @@ function burstParticles(pos,palette,count=16,power=1){
  }
 }
 function resetGame(){
- ended=false;dragging=false;physics=false;score=0;round=0;gameSeconds=30;objectResolved=false;
- bankedPotatoes.forEach(p=>{scene.remove(p);disposeObject(p)});bankedPotatoes=[];
+ ended=false;dragging=false;physics=false;score=0;round=0;gameSeconds=30;objectResolved=false;streak=0;bestStreak=0;sortedCount=0;goldCount=0;
+ bankedPotatoes.forEach(p=>scene.remove(p));bankedPotatoes=[];particles.forEach(p=>{scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose()});particles=[];
  if(basket){basket.rotation.set(0,0,0);basket.scale.set(1.34,1.10,1.34)}
  if(objectRoot)objectRoot.visible=true;
  showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();
@@ -228,11 +241,15 @@ function init(){
  grabOffset=new THREE.Vector3();dragPlane=new THREE.Plane(new THREE.Vector3(0,0,1),0);raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();hitPoint=new THREE.Vector3();
  scene=new THREE.Scene();scene.background=new THREE.Color("#282219");scene.fog=new THREE.Fog("#282219",8,18);
  camera=new THREE.PerspectiveCamera(37,1,.1,100);camera.position.set(0,.15,7.2);camera.lookAt(0,-.2,0);
- renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.35));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=false;
- scene.add(new THREE.HemisphereLight("#e6d8bd","#302317",2.15));
- const key=new THREE.DirectionalLight("#fff0d2",3.2);key.position.set(-3,5,5);key.castShadow=false;scene.add(key);
- const fill=new THREE.DirectionalLight("#b8bdc7",.85);fill.position.set(4,1,-4);scene.add(fill);
+ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.35));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=false;renderer.setClearColor("#282219",1);
+ scene.add(new THREE.HemisphereLight("#e6d8bd","#302317",1.8));
+ const key=new THREE.DirectionalLight("#fff0d2",2.5);key.position.set(-3,5,5);key.castShadow=false;scene.add(key);
+ const fill=new THREE.DirectionalLight("#b8bdc7",.75);fill.position.set(4,1,-4);scene.add(fill);
+ const rimLight=new THREE.DirectionalLight("#e5b86e",.7);rimLight.position.set(2,2,4);scene.add(rimLight);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#393126",roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.68;floor.receiveShadow=true;scene.add(floor);
+ const shadowCanvas=document.createElement("canvas");shadowCanvas.width=128;shadowCanvas.height=128;const sc=shadowCanvas.getContext("2d");const sg=sc.createRadialGradient(64,64,4,64,64,62);sg.addColorStop(0,"rgba(0,0,0,.34)");sg.addColorStop(.55,"rgba(0,0,0,.16)");sg.addColorStop(1,"rgba(0,0,0,0)");sc.fillStyle=sg;sc.fillRect(0,0,128,128);const shadowTex=new THREE.CanvasTexture(shadowCanvas);
+ basketShadow=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.1),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,toneMapped:false}));basketShadow.rotation.x=-Math.PI/2;basketShadow.position.set(0,-1.665,.15);scene.add(basketShadow);
+ objectShadow=new THREE.Mesh(new THREE.PlaneGeometry(1.1,.7),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,toneMapped:false}));objectShadow.rotation.x=-Math.PI/2;objectShadow.position.set(0,-1.662,.1);scene.add(objectShadow);
  const back=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#282219",roughness:1}));back.position.z=-3;scene.add(back);
  basket=makeBasket();basket.scale.set(1.34,1.10,1.34);basket.position.y=.10;scene.add(basket);
  objectRoot=new THREE.Group();scene.add(objectRoot);
@@ -241,12 +258,21 @@ function init(){
 function resize(){if(!renderer||!camera)return;const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
- round++;objectRoot.rotation.set(0,0,0);const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.43, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999);
- current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle};
+ round++;objectRoot.rotation.set(0,0,0);const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.43, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&r()>.93;
+ current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle,golden};
  objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82,rockStyle);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*.9,.86+(r()-.5)*.22,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
+ if(golden&&objectMesh.children[0]&&objectMesh.children[0].material){const gm=objectMesh.children[0].material;gm.color.set("#ffe0a0");gm.emissive=new THREE.Color("#6e3600");gm.emissiveIntensity=.32;gm.roughness=.55;burstParticles(objectRoot.position,["#ffe8a0","#f4c54c","#a67b25"],6,.35);showNotice("黄金じゃがいも！","カゴに入れると高額査定");}
 }
 function pointerToPlane(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);return raycaster.ray.intersectPlane(dragPlane,hitPoint)}
-function updateHud(){document.getElementById("scoreText").textContent="¥"+score.toLocaleString("ja-JP");document.getElementById("countText").textContent=String(bankedPotatoes.length);document.getElementById("timeText").textContent=Math.max(0,gameSeconds).toFixed(1)+"秒";document.getElementById("timeFill").style.width=(Math.max(0,gameSeconds)/45*100)+"%";}
+function multiplierFor(s){return Math.min(3,1+Math.floor(s/3)*.5)}
+function recordSuccess(){streak++;sortedCount++;bestStreak=Math.max(bestStreak,streak);updateHud();return multiplierFor(streak)}
+function updateHud(){
+ document.getElementById("scoreText").textContent="¥"+score.toLocaleString("ja-JP");document.getElementById("countText").textContent=String(bankedPotatoes.length);
+ document.getElementById("timeText").textContent=Math.max(0,gameSeconds).toFixed(1)+"秒";
+ document.getElementById("timeFill").style.width=(Math.max(0,gameSeconds)/30*100)+"%";
+ document.getElementById("timeFill").classList.toggle("urgent",gameSeconds<=5);
+ const combo=document.getElementById("comboText");combo.textContent="COMBO "+streak+" · ×"+multiplierFor(streak).toFixed(1);combo.classList.toggle("hot",streak>=3);
+}
 function onDown(e){
  if(!ready||ended||physics)return;
  pointerToPlane(e);
@@ -272,7 +298,9 @@ function gameOver(message){
  if(score>best){best=score;try{localStorage.setItem("potato3dBest",String(best))}catch(_){}}
  document.getElementById("endTitle").textContent=gameSeconds<=0?"タイムアップ！":"鑑定終了！";
  document.getElementById("endScore").textContent="¥"+score.toLocaleString("ja-JP");
- document.getElementById("endMeta").innerHTML='<div class="endrow"><span>今回の売上</span><strong>¥'+score.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>自己ベスト売上</span><strong>¥'+best.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>カゴに入れた数</span><strong>'+bankedPotatoes.length+' 個</strong></div><div class="endrow"><span>終了理由</span><strong>'+message+'</strong></div>';
+ const rank=score>=2400?"伝説の芋王":score>=1600?"黄金の鑑定士":score>=950?"畑のエース":score>=450?"一人前の鑑定士":"見習い鑑定士";
+ document.getElementById("endRank").textContent=rank;
+ document.getElementById("endMeta").innerHTML='<div class="endrow"><span>今回の売上</span><strong>¥'+score.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>自己ベスト売上</span><strong>¥'+best.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>カゴに入れた数</span><strong>'+bankedPotatoes.length+' 個</strong></div><div class="endrow"><span>正しい仕分け</span><strong>'+sortedCount+' 回</strong></div><div class="endrow"><span>最大コンボ</span><strong>'+bestStreak+' 連続</strong></div><div class="endrow"><span>黄金じゃがいも</span><strong>'+goldCount+' 個</strong></div><div class="endrow"><span>終了理由</span><strong>'+message+'</strong></div>';
  document.getElementById("endPanel").classList.add("show");
  showNotice("鑑定終了","売上 ¥"+score.toLocaleString("ja-JP"));
 }
@@ -287,14 +315,14 @@ function resolveObject(inBasket){
  objectResolved=true;physics=false;
  if(inBasket){
   if(current.potato){
-   const price=Math.round(current.weight*.5);score+=price;addPotatoToBasket();updateHud();basketPulse=1;
-   burstParticles(new THREE.Vector3(objectRoot.position.x,-.78,.35),["#ead08a","#cfaa62","#a17a49","#745337"],12,1.0);
-   showNotice("+¥"+price.toLocaleString("ja-JP"),"売上 ¥"+score.toLocaleString("ja-JP")+"  •  "+bankedPotatoes.length+"個");
+   const multiplier=recordSuccess(),basePrice=Math.round(current.weight*.5),goldFactor=current.golden?3:1,price=Math.round(basePrice*goldFactor*multiplier);score+=price;if(current.golden)goldCount++;addPotatoToBasket();updateHud();basketPulse=1;
+   burstParticles(new THREE.Vector3(objectRoot.position.x,-.78,.35),current.golden?["#fff0a8","#f4c54c","#a17a25"]:["#ead08a","#cfaa62","#a17a49","#745337"],current.golden?22:12,current.golden?1.25:1.0);
+   showNotice((current.golden?"GOLD! ":"")+"+¥"+price.toLocaleString("ja-JP"),"×"+multiplier.toFixed(1)+"査定 · 売上 ¥"+score.toLocaleString("ja-JP"));
    setTimeout(()=>{if(!ended)nextItem()},300);
   }else{burstParticles(objectRoot.position,["#bd7752","#74432c","#d1a66a"],8,.8);gameOver("石をカゴに入れてしまった！")}
  }else{
   if(current.potato){burstParticles(objectRoot.position,["#a55b3f","#75402c","#d4a265"],7,.8);gameOver("じゃがいもを落としてしまった！")}
-  else{burstParticles(objectRoot.position,["#715c43","#947b59","#c5a779"],7,.75);showNotice("石を見抜いた！","カゴの外へ仕分け成功");setTimeout(()=>{if(!ended)nextItem()},260)}
+  else{const multiplier=recordSuccess();burstParticles(objectRoot.position,["#715c43","#947b59","#c5a779"],7,.75);showNotice("石を見抜いた！","連続 "+streak+"回 · 次の査定 ×"+multiplierFor(streak).toFixed(1));setTimeout(()=>{if(!ended)nextItem()},260)}
  }
 }
 function animate(){
@@ -330,6 +358,7 @@ function animate(){
   const pulse=Math.sin(basketPulse*Math.PI)*.055;
   basket.scale.set(1.34*(1+pulse),1.10*(1+pulse*1.5),1.34*(1+pulse));
  }
+ if(objectShadow&&objectRoot&&!ended){objectShadow.position.x=objectRoot.position.x*.88;const altitude=clamp((objectRoot.position.y+1.1)/2.3,0,1);objectShadow.material.opacity=.28-altitude*.19;objectShadow.scale.setScalar(1+altitude*.85);}
  renderer.render(scene,camera);
 }
 canvas.addEventListener("pointerdown",onDown);canvas.addEventListener("pointermove",onMove);canvas.addEventListener("pointerup",onUp);canvas.addEventListener("pointercancel",()=>{if(dragging){dragging=false;physics=true;lastFrame=performance.now()}canvas.style.cursor="grab"});window.addEventListener("resize",resize);
