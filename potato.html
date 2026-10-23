@@ -5,10 +5,24 @@
 <meta name="theme-color" content="#211b14"><title>じゃがいも鑑定士 | ゲーム王国</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#211b14;touch-action:none}body{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}canvas:active{cursor:grabbing}.fatal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:26px;background:#211b14;color:#eee7d7;font-family:system-ui,sans-serif;text-align:center}.fatal[hidden]{display:none}.fatal-card{max-width:360px;border:1px solid #8c7652;background:#30271c;padding:24px;border-radius:18px;line-height:1.7}.fatal button{border:0;border-radius:10px;background:#d7bd86;color:#211b14;font-weight:800;padding:12px 20px;margin-top:12px}
+
+#hud{position:fixed;z-index:4;left:14px;right:14px;top:max(12px,env(safe-area-inset-top));color:#f5e8cd;font:800 14px system-ui,sans-serif;pointer-events:none;text-shadow:0 2px 8px #000}
+.hudtop{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border:1px solid #8c765277;border-radius:15px;background:#21180fc9;backdrop-filter:blur(8px)}
+.hudstat{font-size:clamp(11px,3.1vw,16px);white-space:nowrap}.hudstat b{font-size:1.13em;color:#f6d89c}
+#timeTrack{height:10px;border:1px solid #c5a875;border-radius:99px;background:#231a10d9;margin-top:8px;overflow:hidden}
+#timeFill{height:100%;width:100%;border-radius:99px;background:linear-gradient(90deg,#c7d27c,#e4b85d,#dc694a);transition:width .12s linear}
+#endPanel{position:fixed;z-index:8;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:#100c09bb;backdrop-filter:blur(7px);font-family:system-ui,sans-serif;color:#f6e9ce}
+#endPanel.show{display:flex}.endcard{width:min(100%,370px);padding:26px 22px;border:1px solid #b49a6a;border-radius:24px;background:linear-gradient(145deg,#493723f5,#21180ff5);text-align:center;box-shadow:0 20px 70px #0009}
+.endeyebrow{color:#d6b980;font-weight:900;letter-spacing:.14em;font-size:12px}.endtitle{font-size:30px;font-weight:1000;margin:8px 0}.endscore{font-size:42px;font-weight:1000;color:#ffe0a0;line-height:1.2}.endmeta{color:#d9c9ab;font-size:14px;line-height:1.8;margin:12px 0 20px}
+#restartBtn{width:100%;border:0;border-radius:14px;padding:15px;background:#e4c48a;color:#2a1d10;font-size:16px;font-weight:1000}
+#hint{position:fixed;z-index:3;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));text-align:center;color:#f0dfc0;font:700 12px system-ui,sans-serif;text-shadow:0 2px 8px #000;pointer-events:none;opacity:.85}
 </style>
 </head>
 <body>
 <canvas id="world" aria-label="3D空間で対象をつかんでバスケットに仕分ける"></canvas>
+<div id="hud"><div class="hudtop"><span class="hudstat">⏳ <b id="timeText">45.0秒</b></span><span class="hudstat">💰 <b id="scoreText">¥0</b></span><span class="hudstat">🥔 <b id="countText">0個</b></span></div><div id="timeTrack"><div id="timeFill"></div></div></div>
+<div id="hint">ドラッグして、勢いよくカゴへ！石はカゴの外へ</div>
+<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endscore" id="endScore">¥0</div><div class="endmeta" id="endMeta">今回の売上</div><button id="restartBtn">もう一度挑戦</button></div></div>
 <div class="fatal" id="fatal" hidden><div class="fatal-card"><strong>3D空間を準備できませんでした</strong><br><span id="fatalText">通信を確認して、もう一度試してください。</span><br><button onclick="location.reload()">再読み込み</button></div></div>
 <script>
 window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const urls=["https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js","https://unpkg.com/three@0.160.0/build/three.min.js"];let index=0,finished=false;function attempt(){if(finished)return;if(window.THREE){finished=true;done(true);return}if(index>=urls.length){finished=true;done(false);return}const s=document.createElement("script");s.src=urls[index++];let timer=setTimeout(()=>{if(!window.THREE){s.remove();attempt()}},6000);s.onload=()=>{clearTimeout(timer);if(window.THREE){finished=true;done(true)}else attempt()};s.onerror=()=>{clearTimeout(timer);attempt()};document.head.appendChild(s)}attempt()};
@@ -16,7 +30,7 @@ window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const 
 <script>
 (()=>{
 const canvas=document.getElementById("world");
-let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,best=Number(localStorage.getItem("potato3dBest")||0),restartLabel=false;
+let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,best=Number(localStorage.getItem("potato3dBest")||0),velocity,physics=false,gameSeconds=45,lastFrame=0,objectResolved=false;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function skinTexture(seed,kind,dirt){
@@ -82,7 +96,11 @@ function addPotatoToBasket(){
  p.rotation.set(Math.random()*.5,Math.random()*6,Math.random()*.5);scene.add(p);bankedPotatoes.push(p);
 }
 function resetGame(){
- ended=false;score=0;round=0;bankedPotatoes.forEach(p=>{scene.remove(p);disposeObject(p)});bankedPotatoes=[];if(basket)basket.rotation.set(0,0,0);if(objectRoot)objectRoot.visible=true;showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  物体をつかんで運ぶ");nextItem();
+ ended=false;dragging=false;physics=false;score=0;round=0;gameSeconds=45;objectResolved=false;
+ bankedPotatoes.forEach(p=>{scene.remove(p);disposeObject(p)});bankedPotatoes=[];
+ if(basket){basket.rotation.set(0,0,0);basket.scale.set(1.30,1.10,1.30)}
+ if(objectRoot)objectRoot.visible=true;
+ showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();
 }
 function init(){
  if(!window.THREE)return;
@@ -95,51 +113,94 @@ function init(){
  const fill=new THREE.DirectionalLight("#b8bdc7",.85);fill.position.set(4,1,-4);scene.add(fill);
  const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#393126",roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.68;floor.receiveShadow=true;scene.add(floor);
  const back=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#282219",roughness:1}));back.position.z=-3;scene.add(back);
- basket=makeBasket();scene.add(basket);
+ basket=makeBasket();basket.scale.set(1.30,1.10,1.30);basket.position.y=.10;scene.add(basket);
  objectRoot=new THREE.Group();scene.add(objectRoot);
- ready=true;resize();showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  物体をつかんで運ぶ");nextItem();animate();
+ ready=true;velocity=new THREE.Vector3();resize();showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();lastFrame=performance.now();animate();
 }
 function resize(){if(!renderer||!camera)return;const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
  round++;const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.43, dirt=isPotato?.22+r()*.58:.6+r()*.4,seed=Math.floor(r()*999999);
  current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt};
- objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*1.1,.58+(r()-.5)*.42,.1);objectRoot.scale.setScalar(.68+r()*.18);ended=false;
+ objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*1.1,.56+(r()-.5)*.30,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
 }
 function pointerToPlane(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);return raycaster.ray.intersectPlane(dragPlane,hitPoint)}
+function updateHud(){document.getElementById("scoreText").textContent="¥"+score.toLocaleString("ja-JP");document.getElementById("countText").textContent=bankedPotatoes.length+"個";document.getElementById("timeText").textContent=Math.max(0,gameSeconds).toFixed(1)+"秒";document.getElementById("timeFill").style.width=(Math.max(0,gameSeconds)/45*100)+"%";}
 function onDown(e){
- if(!ready)return;
- if(ended){resetGame();return}
+ if(!ready||ended||physics)return;
  pointerToPlane(e);
  const hits=raycaster.intersectObject(objectMesh,true);if(!hits.length)return;
- dragging=true;lastTime=performance.now();canvas.setPointerCapture(e.pointerId);canvas.style.cursor="grabbing";
- grabOffset.copy(objectRoot.position).sub(hitPoint);
+ dragging=true;physics=false;velocity.set(0,0,0);lastTime=performance.now();
+ try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+ canvas.style.cursor="grabbing";grabOffset.copy(objectRoot.position).sub(hitPoint);
 }
 function onMove(e){
  if(!dragging)return;
- if(pointerToPlane(e)){objectRoot.position.x=clamp(hitPoint.x+grabOffset.x,-3.0,3.0);objectRoot.position.y=clamp(hitPoint.y+grabOffset.y,-1.45,2.2)}
+ const now=performance.now(),dt=Math.max(.008,(now-lastTime)/1000),prev=objectRoot.position.clone();
+ if(pointerToPlane(e)){
+  objectRoot.position.x=clamp(hitPoint.x+grabOffset.x,-3.0,3.0);
+  objectRoot.position.y=clamp(hitPoint.y+grabOffset.y,-1.45,2.2);
+  velocity.set((objectRoot.position.x-prev.x)/dt,(objectRoot.position.y-prev.y)/dt,0);
+  velocity.clampLength(0,7.5);
+ }
+ lastTime=now;
 }
 function gameOver(message){
- ended=true;dragging=false;canvas.style.cursor="grab";
- if(score>best){best=score;localStorage.setItem("potato3dBest",String(best))}
- showNotice("鑑定終了",""+message+"  •  売上 ¥"+score.toLocaleString("ja-JP")+"  •  タップで再挑戦");
+ if(ended)return;
+ ended=true;dragging=false;physics=false;canvas.style.cursor="grab";
+ if(score>best){best=score;try{localStorage.setItem("potato3dBest",String(best))}catch(_){}}
+ document.getElementById("endTitle").textContent=gameSeconds<=0?"タイムアップ！":"鑑定終了！";
+ document.getElementById("endScore").textContent="¥"+score.toLocaleString("ja-JP");
+ document.getElementById("endMeta").innerHTML=message+"<br>じゃがいも："+bankedPotatoes.length+"個<br>ベスト売上：¥"+best.toLocaleString("ja-JP");
+ document.getElementById("endPanel").classList.add("show");
+ showNotice("鑑定終了","売上 ¥"+score.toLocaleString("ja-JP"));
 }
 function onUp(){
- if(!dragging)return;dragging=false;canvas.style.cursor="grab";
- const inBasket=Math.abs(objectRoot.position.x)<.58&&objectRoot.position.y<-.55&&objectRoot.position.y> -1.55;
+ if(!dragging)return;
+ dragging=false;canvas.style.cursor="grab";
+ // Preserve the movement speed at release; gravity and drag continue moving the specimen.
+ velocity.multiplyScalar(.88);velocity.clampLength(0,7.5);physics=true;lastFrame=performance.now();
+}
+function resolveObject(inBasket){
+ if(objectResolved||ended)return;
+ objectResolved=true;physics=false;
  if(inBasket){
-   if(current.potato){
-     const price=Math.round(current.weight*.5);score+=price;addPotatoToBasket();basket.scale.set(1.035,1.025,1.035);
-     showNotice("+"+"¥"+price.toLocaleString("ja-JP"),"売上 ¥"+score.toLocaleString("ja-JP")+"  •  じゃがいも "+bankedPotatoes.length+"個");
-     setTimeout(()=>{if(basket)basket.scale.set(1,1,1);if(!ended)nextItem()},320);
-   }else{gameOver("石をカゴに入れてしまった！")}
+  if(current.potato){
+   const price=Math.round(current.weight*.5);score+=price;addPotatoToBasket();updateHud();
+   basket.scale.set(1.34,1.12,1.34);
+   showNotice("+¥"+price.toLocaleString("ja-JP"),"売上 ¥"+score.toLocaleString("ja-JP")+"  •  "+bankedPotatoes.length+"個");
+   setTimeout(()=>{if(basket)basket.scale.set(1.30,1.10,1.30);if(!ended)nextItem()},300);
+  }else gameOver("石をカゴに入れてしまった！");
  }else{
-   if(current.potato){gameOver("じゃがいもを落としてしまった！")}
-   else{showNotice("石を見抜いた！","カゴに入れずに仕分け成功");setTimeout(()=>{if(!ended)nextItem()},270)}
+  if(current.potato)gameOver("じゃがいもを落としてしまった！");
+  else{showNotice("石を見抜いた！","カゴの外へ仕分け成功");setTimeout(()=>{if(!ended)nextItem()},260)}
  }
 }
-function animate(){requestAnimationFrame(animate);if(!renderer)return;const t=performance.now()*.001;if(objectRoot&&!dragging&&!ended){objectRoot.position.y+=Math.sin(t*1.3+round)*.0008}renderer.render(scene,camera)}
-canvas.addEventListener("pointerdown",onDown);canvas.addEventListener("pointermove",onMove);canvas.addEventListener("pointerup",onUp);canvas.addEventListener("pointercancel",()=>{dragging=false;canvas.style.cursor="grab"});window.addEventListener("resize",resize);
+function animate(){
+ requestAnimationFrame(animate);if(!renderer)return;
+ const now=performance.now(),dt=Math.min(.04,(now-lastFrame)/1000||0);lastFrame=now;
+ if(!ended){
+  gameSeconds=Math.max(0,gameSeconds-dt);updateHud();
+  if(gameSeconds<=0)gameOver("制限時間終了！");
+ }
+ if(objectRoot&&!dragging&&!ended){
+  if(physics){
+   velocity.y-=4.8*dt;objectRoot.position.addScaledVector(velocity,dt);
+   velocity.multiplyScalar(Math.pow(.985,dt*60));
+   // The enlarged basket catches a downward-moving item crossing its opening.
+   const inBasket=Math.abs(objectRoot.position.x)<.91&&objectRoot.position.y<-.73&&objectRoot.position.y> -1.42&&velocity.y<0;
+   if(inBasket){resolveObject(true)}
+   else if(objectRoot.position.y< -1.16){
+    objectRoot.position.y=-1.16;
+    if(Math.abs(velocity.y)>.8&&Math.abs(velocity.x)<2.2){velocity.y=Math.abs(velocity.y)*.20;velocity.x*=.55}
+    else resolveObject(false);
+   }else if(Math.abs(objectRoot.position.x)>3.25||objectRoot.position.y>2.8)resolveObject(false);
+  }else{const t=now*.001;objectRoot.position.y+=Math.sin(t*1.3+round)*.0008}
+ }
+ renderer.render(scene,camera);
+}
+canvas.addEventListener("pointerdown",onDown);canvas.addEventListener("pointermove",onMove);canvas.addEventListener("pointerup",onUp);canvas.addEventListener("pointercancel",()=>{if(dragging){dragging=false;physics=true;lastFrame=performance.now()}canvas.style.cursor="grab"});window.addEventListener("resize",resize);
+document.getElementById("restartBtn").addEventListener("click",()=>{document.getElementById("endPanel").classList.remove("show");resetGame();updateHud()});
 window.loadThreeLibrary(ok=>{if(!ok){showFatal("3Dエンジンを読み込めませんでした。ネット接続を確認して再読み込みしてください。");return}try{init()}catch(err){console.error(err);showFatal("3D表示を開始できませんでした。ブラウザを再読み込みしてみてください。")}})
 })();
 </script>
