@@ -18,6 +18,15 @@
 #comboLine{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;padding:0 3px;color:#bca98a;font-size:10px;font-weight:800;letter-spacing:.02em}
 #comboText{color:#ffe0a0;font-size:11px}
 #comboText.hot{color:#ffbf62}
+#modePanel{position:fixed;z-index:9;inset:0;display:none;align-items:center;justify-content:center;padding:22px;background:#100c09c9;backdrop-filter:blur(9px);font-family:system-ui,sans-serif;color:#f6e9ce}
+#modePanel.show{display:flex}
+.modecard{width:min(100%,390px);padding:25px 21px;border:1px solid #b49a6a;border-radius:26px;background:linear-gradient(145deg,#493723f5,#21180ff5);text-align:center;box-shadow:0 20px 70px #0009}
+.modeicon{font-size:44px;filter:drop-shadow(0 5px 16px #edbd5c44)}
+.modetitle{font-size:27px;font-weight:1000;margin:6px 0 4px}.modesub{font-size:13px;line-height:1.7;color:#cdbb9a;margin:0 0 18px}
+.modebtn{width:100%;border:1px solid #af9057;border-radius:15px;padding:14px 12px;margin-top:10px;background:#e4c48a;color:#2a1d10;font:900 16px system-ui,sans-serif}
+.modebtn.secondary{background:#2d241a;color:#f5dfb3;border-color:#786343}
+.modebtn small{display:block;margin-top:4px;font-size:11px;font-weight:600;opacity:.78}
+.modepill{display:inline-block;border:1px solid #b99a63;border-radius:99px;padding:5px 10px;margin:0 0 8px;color:#f5d99d;font-size:11px;font-weight:900;letter-spacing:.08em}
 .endrank{font-size:15px;font-weight:900;color:#e9ca8e;letter-spacing:.04em;margin:4px 0}
 #endPanel{position:fixed;z-index:8;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:#100c09bb;backdrop-filter:blur(7px);font-family:system-ui,sans-serif;color:#f6e9ce}
 #endPanel.show{display:flex}.endcard{width:min(100%,370px);padding:26px 22px;border:1px solid #b49a6a;border-radius:24px;background:linear-gradient(145deg,#493723f5,#21180ff5);text-align:center;box-shadow:0 20px 70px #0009}
@@ -30,12 +39,13 @@
 <body>
 <canvas id="world" aria-label="3D空間で対象をつかんでバスケットに仕分ける"></canvas>
 <div id="hud"><div class="hudtop">
-<div class="hudstat"><span>残り時間</span><b id="timeText">45.0<span class="unit">秒</span></b></div>
+<div class="hudstat"><span id="timeLabel">残り時間</span><b id="timeText">30.0<span class="unit">秒</span></b></div>
 <div class="hudstat"><span>今回の売上</span><b id="scoreText">¥0</b></div>
 <div class="hudstat"><span>カゴに入れた数</span><b><span id="countText">0</span><span class="unit">個</span></b></div>
-</div><div id="timeTrack"><div id="timeFill"></div></div><div id="comboLine"><span>連続成功で査定アップ</span><b id="comboText">COMBO 0 · ×1.0</b></div></div>
+</div><div id="timeTrack"><div id="timeFill"></div></div><div id="comboLine"><span>ノーミスで連続記録を伸ばそう</span><b id="comboText">連続成功 0回</b></div></div>
 <div id="hint">ドラッグして、勢いよくカゴへ！石はカゴの外へ</div>
-<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endrank" id="endRank">畑の見習い</div><div class="endscore" id="endScore">¥0</div><div class="endstats" id="endMeta"><div class="endrow"><span>今回の売上</span><strong>¥0</strong></div></div><button id="restartBtn">もう一度挑戦</button></div></div>
+<div id="endPanel"><div class="endcard"><div class="endeyebrow">POTATO APPRAISER</div><div class="endtitle" id="endTitle">鑑定終了！</div><div class="endrank" id="endRank">畑の見習い</div><div class="endscore" id="endScore">¥0</div><div class="endstats" id="endMeta"><div class="endrow"><span>今回の売上</span><strong>¥0</strong></div></div><button id="restartBtn">同じモードでもう一度</button><button id="modeBackBtn" class="modebtn secondary">モード選択へ戻る</button></div></div>
+<div id="modePanel" class="show"><div class="modecard"><div class="modeicon">🥔</div><div class="modepill">POTATO APPRAISER</div><div class="modetitle">じゃがいも鑑定士</div><p class="modesub">じゃがいもはカゴへ、石はカゴの外へ！<br>ドラッグして、勢いよく投げ分けよう。</p><button id="timedModeBtn" class="modebtn">30秒スコアアタック<small>30秒で売上と正しい仕分け数に挑戦</small></button><button id="endlessModeBtn" class="modebtn secondary">エンドレスモード<small>時間制限なし。ミスするまで続くサバイバル</small></button></div></div>
 <div class="fatal" id="fatal" hidden><div class="fatal-card"><strong>3D空間を準備できませんでした</strong><br><span id="fatalText">通信を確認して、もう一度試してください。</span><br><button onclick="location.reload()">再読み込み</button></div></div>
 <script>
 window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const urls=["https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js","https://unpkg.com/three@0.160.0/build/three.min.js"];let index=0,finished=false;function attempt(){if(finished)return;if(window.THREE){finished=true;done(true);return}if(index>=urls.length){finished=true;done(false);return}const s=document.createElement("script");s.src=urls[index++];let timer=setTimeout(()=>{if(!window.THREE){s.remove();attempt()}},6000);s.onload=()=>{clearTimeout(timer);if(window.THREE){finished=true;done(true)}else attempt()};s.onerror=()=>{clearTimeout(timer);attempt()};document.head.appendChild(s)}attempt()};
@@ -43,7 +53,7 @@ window.loadThreeLibrary=function(done){if(window.THREE){done(true);return}const 
 <script>
 (()=>{
 const canvas=document.getElementById("world");
-let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,noticeTimer=0,best=Number(localStorage.getItem("potato3dBest")||0),velocity,physics=false,gameSeconds=30,lastFrame=0,objectResolved=false,particles=[],basketPulse=0,streak=0,bestStreak=0,sortedCount=0,goldCount=0,miniPotatoGeometry=null,miniPotatoMaterial=null,objectShadow=null,basketShadow=null;
+let renderer,scene,camera,objectRoot,objectMesh,basket,ready=false,dragging=false,ended=false,score=0,round=0,current=null,grabOffset,dragPlane,raycaster,pointer,hitPoint,lastTime=0,bankedPotatoes=[],noticeSprite=null,noticeTimer=0,best=Number(localStorage.getItem("potato3dBest")||0),velocity,physics=false,gameSeconds=30,elapsedSeconds=0,gameMode="timed",started=false,lastFrame=0,objectResolved=false,particles=[],basketPulse=0,streak=0,bestStreak=0,sortedCount=0,goldCount=0,miniPotatoGeometry=null,miniPotatoMaterial=null,objectShadow=null,basketShadow=null,goldGlowTexture=null,goldGlowSprite=null;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function rng(seed){let s=seed>>>0;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function skinTexture(seed,kind,dirt,rockStyle="angular"){
@@ -229,12 +239,29 @@ function burstParticles(pos,palette,count=16,power=1){
   particles.push({mesh,vx:Math.cos(angle)*speed,vy:(.45+Math.random()*1.8)*power,vz:(Math.random()-.5)*.7,life:.45+Math.random()*.55,maxLife:.45+Math.random()*.55,spin:(Math.random()-.5)*8});
  }
 }
+function showModeMenu(){
+ started=false;dragging=false;physics=false;
+ document.getElementById("endPanel").classList.remove("show");
+ document.getElementById("modePanel").classList.add("show");
+}
+function startMode(mode){
+ gameMode=mode;
+ try{
+  const key=gameMode==="endless"?"potato3dBestEndless":"potato3dBestTimed";
+  best=Number(localStorage.getItem(key)||(gameMode==="timed"?localStorage.getItem("potato3dBest"):"")||0);
+ }catch(_){best=0}
+ document.getElementById("modePanel").classList.remove("show");
+ document.getElementById("endPanel").classList.remove("show");
+ started=true;resetGame();
+}
 function resetGame(){
- ended=false;dragging=false;physics=false;score=0;round=0;gameSeconds=30;objectResolved=false;streak=0;bestStreak=0;sortedCount=0;goldCount=0;
- bankedPotatoes.forEach(p=>scene.remove(p));bankedPotatoes=[];particles.forEach(p=>{scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose()});particles=[];
+ ended=false;dragging=false;physics=false;score=0;round=0;gameSeconds=30;elapsedSeconds=0;objectResolved=false;streak=0;bestStreak=0;sortedCount=0;goldCount=0;
+ bankedPotatoes.forEach(p=>scene.remove(p));bankedPotatoes=[];
+ particles.forEach(p=>{scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose()});particles=[];
  if(basket){basket.rotation.set(0,0,0);basket.scale.set(1.34,1.10,1.34)}
  if(objectRoot)objectRoot.visible=true;
- showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();
+ nextItem();updateHud();
+ showNotice(gameMode==="endless"?"エンドレス開始！":"30秒チャレンジ開始！",gameMode==="endless"?"ミスするまで続けよう":"黄金じゃがいもを狙おう");
 }
 function init(){
  if(!window.THREE)return;
@@ -253,25 +280,38 @@ function init(){
  const back=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:"#282219",roughness:1}));back.position.z=-3;scene.add(back);
  basket=makeBasket();basket.scale.set(1.34,1.10,1.34);basket.position.y=.10;scene.add(basket);
  objectRoot=new THREE.Group();scene.add(objectRoot);
- ready=true;velocity=new THREE.Vector3();resize();showNotice("じゃがいもはカゴへ","石はカゴの外へ  •  勢いをつけて投げよう");nextItem();updateHud();lastFrame=performance.now();animate();
+ ready=true;velocity=new THREE.Vector3();resize();updateHud();lastFrame=performance.now();animate();
 }
 function resize(){if(!renderer||!camera)return;const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
- round++;objectRoot.rotation.set(0,0,0);const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.43, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&r()>.93;
+ round++;objectRoot.rotation.set(0,0,0);
+ if(goldGlowSprite){objectRoot.remove(goldGlowSprite);goldGlowSprite.material.dispose();goldGlowSprite=null}
+ const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&r()>.93;
  current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle,golden};
  objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82,rockStyle);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*.9,.86+(r()-.5)*.22,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
- if(golden&&objectMesh.children[0]&&objectMesh.children[0].material){const gm=objectMesh.children[0].material;gm.color.set("#ffe0a0");gm.emissive=new THREE.Color("#6e3600");gm.emissiveIntensity=.32;gm.roughness=.55;burstParticles(objectRoot.position,["#ffe8a0","#f4c54c","#a67b25"],6,.35);showNotice("黄金じゃがいも！","カゴに入れると高額査定");}
+ if(golden&&objectMesh.children[0]&&objectMesh.children[0].material){
+  const gm=objectMesh.children[0].material;gm.color.set("#fff0ac");gm.emissive=new THREE.Color("#ffb900");gm.emissiveIntensity=3.2;gm.roughness=.3;
+  if(!goldGlowTexture){const cv=document.createElement("canvas");cv.width=128;cv.height=128;const gx=cv.getContext("2d"),gr=gx.createRadialGradient(64,64,2,64,64,63);gr.addColorStop(0,"rgba(255,255,220,1)");gr.addColorStop(.16,"rgba(255,240,90,.95)");gr.addColorStop(.38,"rgba(255,184,20,.58)");gr.addColorStop(.7,"rgba(255,139,0,.16)");gr.addColorStop(1,"rgba(255,130,0,0)");gx.fillStyle=gr;gx.fillRect(0,0,128,128);goldGlowTexture=new THREE.CanvasTexture(cv);goldGlowTexture.colorSpace=THREE.SRGBColorSpace}
+  goldGlowSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:goldGlowTexture,transparent:true,opacity:.96,blending:THREE.AdditiveBlending,depthTest:false,depthWrite:false,toneMapped:false}));
+  goldGlowSprite.scale.set(2.0,2.0,1);goldGlowSprite.position.set(0,0,.1);goldGlowSprite.renderOrder=4;objectRoot.add(goldGlowSprite);
+  burstParticles(objectRoot.position,["#fff5ae","#ffdf39","#ffac00"],10,.45);showNotice("✨ 黄金じゃがいも！","強烈に輝くお宝！カゴへ急げ");
+ }
 }
 function pointerToPlane(e){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);return raycaster.ray.intersectPlane(dragPlane,hitPoint)}
-function multiplierFor(s){return Math.min(3,1+Math.floor(s/3)*.5)}
-function recordSuccess(){streak++;sortedCount++;bestStreak=Math.max(bestStreak,streak);updateHud();return multiplierFor(streak)}
+function recordSuccess(){streak++;sortedCount++;bestStreak=Math.max(bestStreak,streak);updateHud()}
 function updateHud(){
  document.getElementById("scoreText").textContent="¥"+score.toLocaleString("ja-JP");document.getElementById("countText").textContent=String(bankedPotatoes.length);
- document.getElementById("timeText").textContent=Math.max(0,gameSeconds).toFixed(1)+"秒";
- document.getElementById("timeFill").style.width=(Math.max(0,gameSeconds)/30*100)+"%";
- document.getElementById("timeFill").classList.toggle("urgent",gameSeconds<=5);
- const combo=document.getElementById("comboText");combo.textContent="COMBO "+streak+" · ×"+multiplierFor(streak).toFixed(1);combo.classList.toggle("hot",streak>=3);
+ const timeLabel=document.getElementById("timeLabel"),track=document.getElementById("timeTrack");
+ if(gameMode==="endless"){
+  timeLabel.textContent="経過時間";document.getElementById("timeText").textContent=Math.floor(elapsedSeconds)+"秒";
+  track.style.display="none";
+ }else{
+  timeLabel.textContent="残り時間";document.getElementById("timeText").textContent=Math.max(0,gameSeconds).toFixed(1)+"秒";
+  track.style.display="block";document.getElementById("timeFill").style.width=(Math.max(0,gameSeconds)/30*100)+"%";
+  document.getElementById("timeFill").classList.toggle("urgent",gameSeconds<=5);
+ }
+ const combo=document.getElementById("comboText");combo.textContent="連続成功 "+streak+"回";combo.classList.toggle("hot",streak>=3);
 }
 function onDown(e){
  if(!ready||ended||physics)return;
@@ -295,12 +335,12 @@ function onMove(e){
 function gameOver(message){
  if(ended)return;
  ended=true;dragging=false;physics=false;canvas.style.cursor="grab";
- if(score>best){best=score;try{localStorage.setItem("potato3dBest",String(best))}catch(_){}}
- document.getElementById("endTitle").textContent=gameSeconds<=0?"タイムアップ！":"鑑定終了！";
+ if(score>best){best=score;try{const key=gameMode==="endless"?"potato3dBestEndless":"potato3dBestTimed";localStorage.setItem(key,String(best));localStorage.setItem("potato3dBest",String(Math.max(best,Number(localStorage.getItem("potato3dBest")||0))))}catch(_){}}
+ document.getElementById("endTitle").textContent=gameMode==="timed"&&gameSeconds<=0?"タイムアップ！":gameMode==="endless"?"エンドレス終了！":"鑑定終了！";
  document.getElementById("endScore").textContent="¥"+score.toLocaleString("ja-JP");
  const rank=score>=2400?"伝説の芋王":score>=1600?"黄金の鑑定士":score>=950?"畑のエース":score>=450?"一人前の鑑定士":"見習い鑑定士";
  document.getElementById("endRank").textContent=rank;
- document.getElementById("endMeta").innerHTML='<div class="endrow"><span>今回の売上</span><strong>¥'+score.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>自己ベスト売上</span><strong>¥'+best.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>カゴに入れた数</span><strong>'+bankedPotatoes.length+' 個</strong></div><div class="endrow"><span>正しい仕分け</span><strong>'+sortedCount+' 回</strong></div><div class="endrow"><span>最大コンボ</span><strong>'+bestStreak+' 連続</strong></div><div class="endrow"><span>黄金じゃがいも</span><strong>'+goldCount+' 個</strong></div><div class="endrow"><span>終了理由</span><strong>'+message+'</strong></div>';
+ document.getElementById("endMeta").innerHTML='<div class="endrow"><span>モード</span><strong>'+(gameMode==="endless"?"エンドレス":"30秒チャレンジ")+'</strong></div><div class="endrow"><span>今回の売上</span><strong>¥'+score.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>このモードの自己ベスト</span><strong>¥'+best.toLocaleString("ja-JP")+'</strong></div><div class="endrow"><span>カゴに入れた数</span><strong>'+bankedPotatoes.length+' 個</strong></div><div class="endrow"><span>正しい仕分け</span><strong>'+sortedCount+' 回</strong></div><div class="endrow"><span>最大連続成功</span><strong>'+bestStreak+' 回</strong></div><div class="endrow"><span>黄金じゃがいも</span><strong>'+goldCount+' 個</strong></div><div class="endrow"><span>終了理由</span><strong>'+message+'</strong></div>';
  document.getElementById("endPanel").classList.add("show");
  showNotice("鑑定終了","売上 ¥"+score.toLocaleString("ja-JP"));
 }
@@ -315,24 +355,25 @@ function resolveObject(inBasket){
  objectResolved=true;physics=false;
  if(inBasket){
   if(current.potato){
-   const multiplier=recordSuccess(),basePrice=Math.round(current.weight*.5),goldFactor=current.golden?3:1,price=Math.round(basePrice*goldFactor*multiplier);score+=price;if(current.golden)goldCount++;addPotatoToBasket();updateHud();basketPulse=1;
+   recordSuccess();const basePrice=Math.round(current.weight*.5),goldFactor=current.golden?3:1,price=Math.round(basePrice*goldFactor);score+=price;if(current.golden)goldCount++;addPotatoToBasket();updateHud();basketPulse=1;
    burstParticles(new THREE.Vector3(objectRoot.position.x,-.78,.35),current.golden?["#fff0a8","#f4c54c","#a17a25"]:["#ead08a","#cfaa62","#a17a49","#745337"],current.golden?22:12,current.golden?1.25:1.0);
-   showNotice((current.golden?"GOLD! ":"")+"+¥"+price.toLocaleString("ja-JP"),"×"+multiplier.toFixed(1)+"査定 · 売上 ¥"+score.toLocaleString("ja-JP"));
+   showNotice((current.golden?"GOLD! ":"")+"+¥"+price.toLocaleString("ja-JP"),"売上 ¥"+score.toLocaleString("ja-JP")+" · "+streak+"連続成功");
    setTimeout(()=>{if(!ended)nextItem()},300);
   }else{burstParticles(objectRoot.position,["#bd7752","#74432c","#d1a66a"],8,.8);gameOver("石をカゴに入れてしまった！")}
  }else{
   if(current.potato){burstParticles(objectRoot.position,["#a55b3f","#75402c","#d4a265"],7,.8);gameOver("じゃがいもを落としてしまった！")}
-  else{const multiplier=recordSuccess();burstParticles(objectRoot.position,["#715c43","#947b59","#c5a779"],7,.75);showNotice("石を見抜いた！","連続 "+streak+"回 · 次の査定 ×"+multiplierFor(streak).toFixed(1));setTimeout(()=>{if(!ended)nextItem()},260)}
+  else{recordSuccess();burstParticles(objectRoot.position,["#715c43","#947b59","#c5a779"],7,.75);showNotice("石を見抜いた！","連続成功 "+streak+"回");setTimeout(()=>{if(!ended)nextItem()},260)}
  }
 }
 function animate(){
  requestAnimationFrame(animate);if(!renderer)return;
  const now=performance.now(),dt=Math.min(.04,(now-lastFrame)/1000||0);lastFrame=now;
- if(!ended){
-  gameSeconds=Math.max(0,gameSeconds-dt);updateHud();
-  if(gameSeconds<=0)gameOver("制限時間終了！");
+ if(started&&!ended){
+  if(gameMode==="timed"){gameSeconds=Math.max(0,gameSeconds-dt);if(gameSeconds<=0)gameOver("制限時間終了！")}
+  else elapsedSeconds+=dt;
+  updateHud();
  }
- if(objectRoot&&!dragging&&!ended){
+ if(started&&objectRoot&&!dragging&&!ended){
   if(physics){
    velocity.y-=4.8*dt;objectRoot.position.addScaledVector(velocity,dt);objectRoot.rotation.x+=velocity.y*dt*.12;objectRoot.rotation.z-=velocity.x*dt*.10;
    velocity.multiplyScalar(Math.pow(.985,dt*60));
@@ -358,11 +399,15 @@ function animate(){
   const pulse=Math.sin(basketPulse*Math.PI)*.055;
   basket.scale.set(1.34*(1+pulse),1.10*(1+pulse*1.5),1.34*(1+pulse));
  }
- if(objectShadow&&objectRoot&&!ended){objectShadow.position.x=objectRoot.position.x*.88;const altitude=clamp((objectRoot.position.y+1.1)/2.3,0,1);objectShadow.material.opacity=.28-altitude*.19;objectShadow.scale.setScalar(1+altitude*.85);}
+ if(started&&objectShadow&&objectRoot&&!ended){objectShadow.position.x=objectRoot.position.x*.88;const altitude=clamp((objectRoot.position.y+1.1)/2.3,0,1);objectShadow.material.opacity=.28-altitude*.19;objectShadow.scale.setScalar(1+altitude*.85);}
+ if(goldGlowSprite&&goldGlowSprite.parent){const pulse=1+.11*Math.sin(now*.009);goldGlowSprite.scale.set(2.0*pulse,2.0*pulse,1);goldGlowSprite.material.opacity=.73+.24*(.5+.5*Math.sin(now*.012));}
  renderer.render(scene,camera);
 }
 canvas.addEventListener("pointerdown",onDown);canvas.addEventListener("pointermove",onMove);canvas.addEventListener("pointerup",onUp);canvas.addEventListener("pointercancel",()=>{if(dragging){dragging=false;physics=true;lastFrame=performance.now()}canvas.style.cursor="grab"});window.addEventListener("resize",resize);
-document.getElementById("restartBtn").addEventListener("click",()=>{document.getElementById("endPanel").classList.remove("show");resetGame();updateHud()});
+document.getElementById("timedModeBtn").addEventListener("click",()=>startMode("timed"));
+document.getElementById("endlessModeBtn").addEventListener("click",()=>startMode("endless"));
+document.getElementById("restartBtn").addEventListener("click",()=>{document.getElementById("endPanel").classList.remove("show");started=true;resetGame();updateHud()});
+document.getElementById("modeBackBtn").addEventListener("click",showModeMenu);
 window.loadThreeLibrary(ok=>{if(!ok){showFatal("3Dエンジンを読み込めませんでした。ネット接続を確認して再読み込みしてください。");return}try{init()}catch(err){console.error(err);showFatal("3D表示を開始できませんでした。ブラウザを再読み込みしてみてください。")}})
 })();
 </script>
