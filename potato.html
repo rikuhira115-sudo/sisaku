@@ -294,7 +294,7 @@ function nextItem(){
  if(objectMesh){objectRoot.remove(objectMesh);objectMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose()});else{if(o.material.map)o.material.map.dispose();o.material.dispose()}}})}
  round++;objectRoot.rotation.set(0,0,0);
  if(goldGlowSprite){objectRoot.remove(goldGlowSprite);goldGlowSprite.material.dispose();goldGlowSprite=null}
- const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&r()>.97;
+ const r=rng(round*9137+Math.floor(Math.random()*99999));const isPotato=r()>.25, rockStyle=isPotato?"potato":(["potatoLike","angular","layered"][Math.floor(r()*3)]), dirt=isPotato?.22+r()*.58:rockStyle==="potatoLike"?.22+r()*.48:.55+r()*.45,seed=Math.floor(r()*999999),golden=isPotato&&bankedPotatoes.length>=10&&r()>.97;
  current={potato:isPotato,weight:isPotato?Math.round(55+r()*440):0,dirt,rockStyle,golden};
  objectMesh=createSpecimen(seed,isPotato?"potato":"rock",dirt,isPotato&&r()>.82,rockStyle);objectRoot.add(objectMesh);objectRoot.position.set((r()-.5)*.9,.86+(r()-.5)*.22,.1);objectRoot.scale.setScalar(.53+r()*.10);velocity.set(0,0,0);physics=false;objectResolved=false;ended=false;
  if(golden&&objectMesh.children[0]&&objectMesh.children[0].material){
