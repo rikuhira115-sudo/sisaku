@@ -15,8 +15,8 @@ h1{margin:18px 0 4px;font-size:clamp(1.7rem,7vw,2.3rem)}
 .cell{aspect-ratio:1;border:0;border-radius:50%;background:#07111e;box-shadow:inset 0 3px 5px #0009,0 1px 0 #ffffff22;cursor:pointer;padding:0;touch-action:manipulation}
 .cell.red{background:#ef4444;box-shadow:inset 0 3px 5px #7f1d1d,0 2px 5px #0008}
 .cell.yellow{background:#facc15;box-shadow:inset 0 3px 5px #854d0e,0 2px 5px #0008}
-.cell.just-dropped{animation:token-fall .42s cubic-bezier(.2,.75,.35,1.08) both;will-change:transform}
-@keyframes token-fall{0%{transform:translateY(calc(0px - var(--fall-distance, 0px))) scale(.96);filter:brightness(1.2)}82%{transform:translateY(2px) scale(1.01);filter:brightness(1.08)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
+.cell.just-dropped{animation:token-fall .48s cubic-bezier(.2,.75,.35,1.15) both;will-change:transform}
+@keyframes token-fall{0%{transform:translateY(-520px) scale(.92);filter:brightness(1.25)}78%{transform:translateY(7px) scale(1.02);filter:brightness(1.1)}90%{transform:translateY(-3px) scale(1)}100%{transform:translateY(0) scale(1);filter:brightness(1)}}
 @media(prefers-reduced-motion:reduce){.cell.just-dropped{animation-duration:.01ms}}
 .cell.win{outline:4px solid #fff;outline-offset:-5px;animation:pulse .65s infinite alternate}
 @keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.45)}}
@@ -60,11 +60,6 @@ function render(){
     if(winCells.some(p=>p[0]===r&&p[1]===c))cell.classList.add("win");
     cell.onclick=()=>drop(c);
     grid.appendChild(cell);
-  }
-  if(lastMove){
-    const landing=grid.children[lastMove[0]*COLS+lastMove[1]];
-    const top=grid.children[lastMove[1]];
-    if(landing&&top)landing.style.setProperty("--fall-distance",Math.max(0,landing.offsetTop-top.offsetTop)+"px");
   }
 }
 function drop(c){
