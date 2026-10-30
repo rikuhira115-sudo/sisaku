@@ -174,6 +174,10 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
    else{const p1=scores[0][round-1],p2=scores[1][round-1];message(feedback.innerHTML+'<br><strong>このラウンド：'+(p1>p2?"P1の勝ち":p2>p1?"P2の勝ち":"引き分け")+'！（P1 '+p1+'点 / P2 '+p2+'点）</strong>','good');if(round<TOTAL_ROUNDS){nextBtn.textContent="次のラウンドへ →";nextBtn.classList.remove("hidden")}else{endMatchDuo();nextBtn.textContent="もう一度対戦";nextBtn.classList.remove("hidden")}}
   }
   setHud();
+  if(matchEnded){
+   if(mode==="solo"){turnLabel.textContent="チャレンジ終了";scoreValue.textContent=scores[0].reduce((a,b)=>a+b,0);bestValue.textContent=localStorage.getItem("perfectCutBest")||"---";}
+   else{const p1=scores[0].reduce((a,b)=>a+b,0),p2=scores[1].reduce((a,b)=>a+b,0);turnLabel.textContent="対戦終了";scoreValue.textContent=p1+" : "+p2;bestValue.textContent="FINAL";}
+  }else if(mode==="duo"){turnLabel.textContent="PLAYER "+(player+1)+" の結果";}
  }
  function endMatchSolo(){const total=scores[0].reduce((a,b)=>a+b,0),best=Number(localStorage.getItem("perfectCutBest")||0),isBest=total>best;if(isBest)localStorage.setItem("perfectCutBest",String(total));matchEnded=true;message('<div class="big">'+total+' / 500 点</div><strong>'+(isBest?"🏆 自己ベスト更新！":"5ラウンド終了！")+'</strong><br>平均 '+(total/TOTAL_ROUNDS).toFixed(1)+' 点 ／ ベスト '+Math.max(total,best)+' 点','good');bestValue.textContent=Math.max(total,best);roundValue.textContent="5 / 5";turnLabel.textContent="チャレンジ終了"}
  function endMatchDuo(){const p1=scores[0].reduce((a,b)=>a+b,0),p2=scores[1].reduce((a,b)=>a+b,0),winner=p1>p2?"PLAYER 1 の勝利！":p2>p1?"PLAYER 2 の勝利！":"引き分け！";matchEnded=true;message('<div class="big">'+winner+'</div><strong>最終結果</strong><br>PLAYER 1：'+p1+'点　／　PLAYER 2：'+p2+'点<br>合計 '+(p1+p2)+' 点','good');roundValue.textContent="5 / 5";scoreValue.textContent=p1+" : "+p2;bestValue.textContent="FINAL";turnLabel.textContent="対戦終了"}
