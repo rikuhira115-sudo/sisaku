@@ -46,7 +46,7 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
 <body>
 <header>
  <h1>✂️ PERFECT CUT</h1>
- <div class="sub">図形を自由に切って、ぴったり半分を目指せ。</div>
+ <div class="sub">指でスッと直線を引いて、図形をぴったり半分に。</div>
 </header>
 <main>
  <div class="modebar">
@@ -61,16 +61,15 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
  <div id="turnLabel">PLAYER 1 の番</div>
  <div id="shapeLabel">図形：サークル</div>
  <div class="boardwrap">
-  <canvas id="board" width="420" height="420" aria-label="図形を指でなぞって切るエリア"></canvas>
+  <canvas id="board" width="420" height="420" aria-label="指で直線を引いて図形を切るエリア"></canvas>
  </div>
  <div class="legend"><span><i class="dot" style="background:#4e9dff"></i>エリア A</span><span><i class="dot" style="background:#ffb84d"></i>エリア B</span></div>
- <div id="feedback" role="status" aria-live="polite">図形のふちから反対側のふちまで、指で線を引こう！<br>線を引いたら「この線でカット！」</div>
- <div class="controls">
-  <button class="action" id="clearBtn">↶ 線を引き直す</button>
-  <button class="action primary" id="cutBtn">✂ この線でカット！</button>
+ <div id="feedback" role="status" aria-live="polite">図形の上を指でドラッグ！<br>指を離すと、その直線で自動カットされるよ。</div>
+ <div class="controls" style="grid-template-columns:1fr">
+  <button class="action" id="clearBtn">↶ 別の線で切り直す</button>
  </div>
  <button class="action primary hidden" id="nextBtn">次へ</button>
- <div class="note">図形のふち付近から線を描き始め、反対側のふちまでつなげよう。<br>2つの面積が50% : 50%に近いほど高得点！ 全5ラウンド。</div>
+ <div class="note">図形の上を好きな位置からドラッグするだけ。直線は自動で図形の端から端まで伸びるよ。<br>50% : 50%に近いほど高得点！ 全5ラウンド。</div>
 </main>
 <script src="common.js"></script>
 <script>
@@ -81,7 +80,7 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
  const $=id=>document.getElementById(id);
  const roundValue=$("roundValue"),scoreValue=$("scoreValue"),bestValue=$("bestValue");
  const turnLabel=$("turnLabel"),shapeLabel=$("shapeLabel"),feedback=$("feedback");
- const clearBtn=$("clearBtn"),cutBtn=$("cutBtn"),nextBtn=$("nextBtn");
+ const clearBtn=$("clearBtn"),nextBtn=$("nextBtn");
  const soloMode=$("soloMode"),duoMode=$("duoMode");
  const defs=[
   {name:"サークル",make:()=>regular(72,210,210,151)},
@@ -93,108 +92,249 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
   {name:"クロス",make:()=>[[150,55],[270,55],[270,150],[365,150],[365,270],[270,270],[270,365],[150,365],[150,270],[55,270],[55,150],[150,150]]},
   {name:"クレセント",make:()=>crescent()}
  ];
- let mode="solo",round=1,shapeIndex=0,points=[],cutPath=null,finished=false,phase="draw";
- let scores=[[],[]],player=0,order=[],areaInfo=null,matchEnded=false;
+ let mode="solo",round=1,shapeIndex=0,poly=defs[0].make();
+ let lineStart=null,lineEnd=null,drawing=false,finished=false,phase="draw";
+ let scores=[[],[]],player=0,order=[],pieces=null,cutPath=null,areaInfo=null,matchEnded=false;
+ let animationProgress=1,animationFrame=0,cutNormal={x:0,y:1};
+
  function regular(n,cx,cy,r,offset=0){const a=[];for(let i=0;i<n;i++){const t=offset+i*Math.PI*2/n;a.push([cx+Math.cos(t)*r,cy+Math.sin(t)*r])}return a}
  function star(n,outer,inner){const a=[];for(let i=0;i<n*2;i++){const t=-Math.PI/2+i*Math.PI/n,r=i%2?inner:outer;a.push([210+Math.cos(t)*r,210+Math.sin(t)*r])}return a}
  function heart(){const a=[];for(let i=0;i<100;i++){const t=i*Math.PI*2/100,x=16*Math.pow(Math.sin(t),3),y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);a.push([210+x*8.4,210-y*8.4])}return a}
  function crescent(){const a=[];for(let i=0;i<=42;i++){const t=-Math.PI/2+i*Math.PI*2/42;a.push([210+Math.cos(t)*147,210+Math.sin(t)*147])}for(let i=42;i>=0;i--){const t=-Math.PI/2+i*Math.PI*2/42;a.push([259+Math.cos(t)*111,210+Math.sin(t)*132])}return a}
- const shuffled=()=>{const a=defs.map((_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
- let poly=defs[0].make();
- const shapePath=(c,p)=>{c.beginPath();c.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);c.closePath()};
- function pointInPoly(p,polyline){let inside=false;for(let i=0,j=polyline.length-1;i<polyline.length;j=i++){const xi=polyline[i][0],yi=polyline[i][1],xj=polyline[j][0],yj=polyline[j][1];if(((yi>p[1])!==(yj>p[1]))&&(p[0]<(xj-xi)*(p[1]-yi)/(yj-yi)+xi))inside=!inside}return inside}
- function nearestEdge(p){let best=null,bd=Infinity;for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy)));const q=[a[0]+dx*t,a[1]+dy*t],d=Math.hypot(p[0]-q[0],p[1]-q[1]);if(d<bd){bd=d;best=q}}return {point:best,distance:bd}}
- function drawBase(){ctx.clearRect(0,0,SIZE,SIZE);ctx.fillStyle="#091326";ctx.fillRect(0,0,SIZE,SIZE);ctx.save();ctx.strokeStyle="rgba(125,160,210,.075)";ctx.lineWidth=1;for(let i=20;i<SIZE;i+=28){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,SIZE);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(SIZE,i);ctx.stroke()}ctx.restore();
-  if(finished&&areaInfo){ctx.drawImage(areaInfo.canvas,0,0)}else{const g=ctx.createLinearGradient(55,55,365,365);g.addColorStop(0,"#56b4ff");g.addColorStop(.55,"#477ce2");g.addColorStop(1,"#6e63d9");ctx.save();ctx.shadowColor="#398bff55";ctx.shadowBlur=24;shapePath(ctx,poly);ctx.fillStyle=g;ctx.fill();ctx.restore()}
-  ctx.save();shapePath(ctx,poly);ctx.strokeStyle="#d8eaff";ctx.lineWidth=3;ctx.shadowColor="#6bb7ff";ctx.shadowBlur=12;ctx.stroke();ctx.restore();
-  if(cutPath){ctx.save();ctx.beginPath();ctx.moveTo(cutPath[0][0],cutPath[0][1]);for(let i=1;i<cutPath.length;i++)ctx.lineTo(cutPath[i][0],cutPath[i][1]);ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=finished?4:7;ctx.strokeStyle=finished?"#fff":"#ffe29a";ctx.shadowColor=finished?"#fff":"#ffbd59";ctx.shadowBlur=finished?8:12;ctx.stroke();ctx.restore()}
-  if(points.length&&!finished){ctx.save();ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=7;ctx.strokeStyle="#ffe29a";ctx.shadowColor="#ffbd59";ctx.shadowBlur=10;ctx.stroke();ctx.restore()}
- }
- function resetCut(){points=[];cutPath=null;finished=false;phase="draw";areaInfo=null;clearBtn.disabled=false;cutBtn.disabled=false;nextBtn.classList.add("hidden");feedback.className="";feedback.innerHTML="図形のふちから反対側のふちまで、指で線を引こう！<br>線を引いたら「この線でカット！」";drawBase()}
- function pointFromEvent(e){const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*SIZE/r.width,(e.clientY-r.top)*SIZE/r.height]}
- let drawing=false;
- canvas.addEventListener("pointerdown",e=>{if(phase!=="draw"||finished)return;const p=pointFromEvent(e);if(!pointInPoly(p,poly)){feedback.textContent="図形の中から線を描き始めてね。";return}drawing=true;points=[p];canvas.setPointerCapture(e.pointerId);drawBase()});
- canvas.addEventListener("pointermove",e=>{if(!drawing||phase!=="draw")return;const p=pointFromEvent(e);const last=points[points.length-1];if(Math.hypot(p[0]-last[0],p[1]-last[1])>2.5)points.push(p);drawBase()});
- function endDraw(){if(!drawing)return;drawing=false;if(points.length<2){points=[];drawBase();return}feedback.textContent="線を確認して「この線でカット！」を押そう。"}
- canvas.addEventListener("pointerup",endDraw);canvas.addEventListener("pointercancel",endDraw);
- function cutGeometry(){
-  if(points.length<2){message("先に図形をなぞって線を引いてね。","bad");return null}
-  const first=nearestEdge(points[0]),last=nearestEdge(points[points.length-1]);
-  if(first.distance>43||last.distance>43){message("線の始点と終点を、図形のふち近くまでつなげてね。","bad");return null}
-  const length=points.reduce((s,p,i)=>i?s+Math.hypot(p[0]-points[i-1][0],p[1]-points[i-1][1]):0,0);
-  if(length<65){message("もう少し長く、図形を横切るように切ってみよう。","bad");return null}
-  const path=[first.point,...points,last.point];
-  const scratch=document.createElement("canvas");scratch.width=SIZE;scratch.height=SIZE;const sc=scratch.getContext("2d",{willReadFrequently:true});
-  shapePath(sc,poly);sc.fillStyle="#fff";sc.fill();
-  sc.beginPath();sc.moveTo(path[0][0],path[0][1]);for(let i=1;i<path.length;i++)sc.lineTo(path[i][0],path[i][1]);sc.lineCap="round";sc.lineJoin="round";sc.lineWidth=9;sc.strokeStyle="#000";sc.stroke();
-  const src=sc.getImageData(0,0,SIZE,SIZE),mask=new Uint8Array(SIZE*SIZE),labels=new Uint8Array(SIZE*SIZE),queue=new Int32Array(SIZE*SIZE);
-  for(let i=0;i<mask.length;i++){const k=i*4;if(src.data[k+3]>0&&src.data[k]>225&&src.data[k+1]>225&&src.data[k+2]>225)mask[i]=1}
-  const counts=[];let id=0;
-  for(let i=0;i<mask.length;i++){
-   if(!mask[i]||labels[i])continue;
-   id++;if(id>2)return {invalid:"この線だと3つ以上に分かれちゃう！線をシンプルに引き直してね。"};
-   let head=0,tail=0;queue[tail++]=i;labels[i]=id;
-   while(head<tail){const n=queue[head++],x=n%SIZE;
-    const ns=[n-1,n+1,n-SIZE,n+SIZE];
-    for(let k=0;k<4;k++){const v=ns[k];if(v<0||v>=mask.length||(k===0&&x===0)||(k===1&&x===SIZE-1))continue;if(mask[v]&&!labels[v]){labels[v]=id;queue[tail++]=v}}
-   }counts.push(tail)
+ function shuffled(){const a=defs.map((_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+ function shapePath(c,p){c.beginPath();c.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);c.closePath()}
+ function pointInPoly(p,arr){let inside=false;for(let i=0,j=arr.length-1;i<arr.length;j=i++){const xi=arr[i][0],yi=arr[i][1],xj=arr[j][0],yj=arr[j][1];if(((yi>p[1])!==(yj>p[1]))&&(p[0]<(xj-xi)*(p[1]-yi)/(yj-yi)+xi))inside=!inside}return inside}
+
+ // A drag defines an infinite straight line. The game clips it to the shape,
+ // so players do not have to hit the outline precisely.
+ function lineIntersections(p0,p1){
+  const dx=p1[0]-p0[0],dy=p1[1]-p0[1],len2=dx*dx+dy*dy;
+  if(len2<100)return [];
+  const found=[];
+  for(let i=0;i<poly.length;i++){
+   const a=poly[i],b=poly[(i+1)%poly.length],ex=b[0]-a[0],ey=b[1]-a[1];
+   const den=dx*ey-dy*ex;
+   if(Math.abs(den)<1e-8)continue;
+   const ax=a[0]-p0[0],ay=a[1]-p0[1];
+   const t=(ax*ey-ay*ex)/den;
+   const u=(ax*dy-ay*dx)/den;
+   if(u>=-1e-6&&u<=1+1e-6){
+    const pt=[p0[0]+t*dx,p0[1]+t*dy];
+    if(!found.some(v=>Math.hypot(v.point[0]-pt[0],v.point[1]-pt[1])<1.5))found.push({t,point:pt});
+   }
   }
-  if(id!==2)return {invalid:"図形を2つに分けられなかったよ。ふちからふちまでつながる線を引いてね。"};
-  const out=document.createElement("canvas");out.width=SIZE;out.height=SIZE;const oc=out.getContext("2d");const image=oc.createImageData(SIZE,SIZE);
-  for(let i=0;i<labels.length;i++){if(!labels[i])continue;const k=i*4;if(labels[i]===1){image.data[k]=72;image.data[k+1]=151;image.data[k+2]=255}else{image.data[k]=255;image.data[k+1]=178;image.data[k+2]=70}image.data[k+3]=255}
-  oc.putImageData(image,0,0);
-  const total=counts[0]+counts[1],a=counts[0]/total*100,b=counts[1]/total*100;
-  return {canvas:out,a,b,score:Math.max(0,Math.round(100-Math.abs(a-b))) ,path}
+  found.sort((a,b)=>a.t-b.t);
+  return found;
  }
- function message(html,type=""){feedback.className=type;feedback.innerHTML=html}
+ function pointFromEvent(e){const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)*SIZE/r.width,(e.clientY-r.top)*SIZE/r.height]}
+ function drawGrid(){ctx.fillStyle="#091326";ctx.fillRect(0,0,SIZE,SIZE);ctx.save();ctx.strokeStyle="rgba(125,160,210,.075)";ctx.lineWidth=1;for(let i=20;i<SIZE;i+=28){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,SIZE);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(SIZE,i);ctx.stroke()}ctx.restore()}
+ function drawOriginal(){
+  const g=ctx.createLinearGradient(55,55,365,365);g.addColorStop(0,"#56b4ff");g.addColorStop(.55,"#477ce2");g.addColorStop(1,"#6e63d9");
+  ctx.save();ctx.shadowColor="#398bff66";ctx.shadowBlur=24;shapePath(ctx,poly);ctx.fillStyle=g;ctx.fill();ctx.restore();
+  ctx.save();shapePath(ctx,poly);ctx.strokeStyle="#d8eaff";ctx.lineWidth=3;ctx.shadowColor="#6bb7ff";ctx.shadowBlur=12;ctx.stroke();ctx.restore();
+ }
+ function drawPreview(){
+  if(!lineStart||!lineEnd)return;
+  const hits=lineIntersections(lineStart,lineEnd);
+  let a,b,valid=hits.length===2;
+  if(valid){a=hits[0].point;b=hits[1].point}else{a=lineStart;b=lineEnd}
+  ctx.save();ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);
+  ctx.lineWidth=valid?6:4;ctx.lineCap="round";ctx.strokeStyle=valid?"#ffe18a":"#ff8c78";
+  ctx.shadowColor=valid?"#ffbd59":"#ff6555";ctx.shadowBlur=15;
+  if(!valid)ctx.setLineDash([9,7]);ctx.stroke();ctx.setLineDash([]);
+  if(valid){for(const p of [a,b]){ctx.beginPath();ctx.arc(p[0],p[1],5,0,Math.PI*2);ctx.fillStyle="#fff4c7";ctx.fill()}}
+  ctx.restore();
+ }
+ function drawResult(progress){
+  if(!pieces)return;
+  const shift=21*(1-Math.pow(1-progress,3));
+  pieces.forEach(piece=>{
+   ctx.save();ctx.shadowColor=piece.id===1?"#4b9dff99":"#ffae5599";ctx.shadowBlur=16;
+   ctx.drawImage(piece.canvas,cutNormal.x*piece.sign*shift,cutNormal.y*piece.sign*shift);
+   ctx.restore();
+  });
+  if(cutPath){
+   ctx.save();ctx.beginPath();ctx.moveTo(cutPath[0][0],cutPath[0][1]);ctx.lineTo(cutPath[1][0],cutPath[1][1]);
+   ctx.lineWidth=2.5;ctx.strokeStyle="rgba(255,255,255,.9)";ctx.shadowColor="#fff";ctx.shadowBlur=15;ctx.stroke();ctx.restore();
+  }
+ }
+ function drawBoard(progress){
+  ctx.clearRect(0,0,SIZE,SIZE);drawGrid();
+  if(finished&&pieces){drawResult(progress===undefined?animationProgress:progress);return}
+  drawOriginal();drawPreview();
+ }
+ function message(html,type){feedback.className=type||"";feedback.innerHTML=html}
+ function resetCut(){
+  cancelAnimationFrame(animationFrame);lineStart=null;lineEnd=null;drawing=false;finished=false;phase="draw";
+  pieces=null;cutPath=null;areaInfo=null;animationProgress=1;
+  clearBtn.classList.add("hidden");nextBtn.classList.add("hidden");
+  message("図形の上を指でドラッグ！<br>指を離すと、その直線で自動カットされるよ。","");
+  drawBoard(1);
+ }
  function setHud(){
   roundValue.textContent=round+" / "+TOTAL_ROUNDS;
-  if(mode==="solo"){scoreValue.textContent=scores[0].reduce((a,b)=>a+b,0);bestValue.textContent=localStorage.getItem("perfectCutBest")||"---";turnLabel.textContent="ひとりチャレンジ";$("scoreCaption").textContent="TOTAL SCORE";$("bestCaption").textContent="BEST"}
-  else{scoreValue.textContent=scores[player].reduce((a,b)=>a+b,0);bestValue.textContent="P"+(player+1)+"の番";turnLabel.textContent="PLAYER "+(player+1)+" の番";$("scoreCaption").textContent="P"+(player+1)+" SCORE";$("bestCaption").textContent="P1 / P2"}
-  $("roundCaption").textContent="ROUND";shapeLabel.textContent="図形："+defs[shapeIndex].name;
+  $("roundCaption").textContent="ROUND";
+  $("scoreCaption").textContent=mode==="solo"?"TOTAL SCORE":"P"+(player+1)+" SCORE";
+  $("bestCaption").textContent=mode==="solo"?"BEST":"P1 / P2";
+  if(mode==="solo"){
+   scoreValue.textContent=scores[0].reduce((a,b)=>a+b,0);
+   bestValue.textContent=localStorage.getItem("perfectCutBest")||"---";
+   turnLabel.textContent=matchEnded?"チャレンジ終了":"ひとりチャレンジ";
+  }else{
+   scoreValue.textContent=scores[player].reduce((a,b)=>a+b,0);
+   bestValue.textContent="P"+(player+1)+"の番";
+   turnLabel.textContent=matchEnded?"対戦終了":"PLAYER "+(player+1)+" の番";
+  }
+  shapeLabel.textContent="図形："+defs[shapeIndex].name;
   soloMode.classList.toggle("active",mode==="solo");duoMode.classList.toggle("active",mode==="duo");
  }
  function newShape(){shapeIndex=order[round-1];poly=defs[shapeIndex].make();resetCut();setHud()}
- function startGame(){round=1;scores=[[],[]];player=0;matchEnded=false;order=shuffled().slice(0,TOTAL_ROUNDS);newShape();message(mode==="solo"?"ふちからふちまで線を引いて、50:50を目指そう！":"PLAYER 1からスタート！ 同じ図形を2人が順番に切るよ。")}
- function finishCut(){
-  if(phase!=="draw")return;
-  const result=cutGeometry();if(!result)return;
-  if(result.invalid){message(result.invalid,"bad");return}
-  cutPath=result.path;areaInfo=result;finished=true;phase="result";drawBase();
+ function startGame(){round=1;scores=[[],[]];player=0;matchEnded=false;order=shuffled().slice(0,TOTAL_ROUNDS);newShape();message(mode==="solo"?"線を引く位置と角度を決めて、指でドラッグ！":"PLAYER 1からスタート！ 同じ図形を2人が順番に切るよ。","")}
+
+ function makePieces(){
+  const hits=lineIntersections(lineStart,lineEnd);
+  if(hits.length!==2)return {invalid:"その直線では2つに分けられないよ。ドラッグする角度を少し変えてみて！"};
+  const path=[hits[0].point,hits[1].point];
+  const dx=lineEnd[0]-lineStart[0],dy=lineEnd[1]-lineStart[1],mag=Math.hypot(dx,dy);
+  if(mag<10)return {invalid:"もう少し長くドラッグしてね。"};
+  const ux=dx/mag,uy=dy/mag;
+  const scratch=document.createElement("canvas");scratch.width=SIZE;scratch.height=SIZE;
+  const sc=scratch.getContext("2d",{willReadFrequently:true});
+  shapePath(sc,poly);sc.fillStyle="#fff";sc.fill();
+  sc.beginPath();sc.moveTo(path[0][0]-ux*14,path[0][1]-uy*14);sc.lineTo(path[1][0]+ux*14,path[1][1]+uy*14);
+  sc.lineCap="butt";sc.lineWidth=12;sc.strokeStyle="#000";sc.stroke();
+  const src=sc.getImageData(0,0,SIZE,SIZE),mask=new Uint8Array(SIZE*SIZE),labels=new Uint8Array(SIZE*SIZE),queue=new Int32Array(SIZE*SIZE);
+  for(let i=0;i<mask.length;i++){const k=i*4;if(src.data[k+3]>45&&src.data[k]>175&&src.data[k+1]>175&&src.data[k+2]>175)mask[i]=1}
+  const counts=[],centers=[];let id=0;
+  for(let i=0;i<mask.length;i++){
+   if(!mask[i]||labels[i])continue;
+   id++;if(id>2)return {invalid:"その線では3つ以上に分かれちゃう！角度を少し変えてみよう。"};
+   let head=0,tail=0,sumX=0,sumY=0;queue[tail++]=i;labels[i]=id;
+   while(head<tail){
+    const n=queue[head++],x=n%SIZE;sumX+=x;sumY+=Math.floor(n/SIZE);
+    const ns=[n-1,n+1,n-SIZE,n+SIZE];
+    for(let k=0;k<4;k++){
+     const v=ns[k];if(v<0||v>=mask.length||(k===0&&x===0)||(k===1&&x===SIZE-1))continue;
+     if(mask[v]&&!labels[v]){labels[v]=id;queue[tail++]=v}
+    }
+   }
+   counts.push(tail);centers.push([sumX/tail,sumY/tail]);
+  }
+  if(id!==2)return {invalid:"図形を2つに分けられなかったよ。図形を横切るようにドラッグしてね。"};
+  const layers=[];
+  for(let part=1;part<=2;part++){
+   const layer=document.createElement("canvas");layer.width=SIZE;layer.height=SIZE;
+   const lc=layer.getContext("2d"),image=lc.createImageData(SIZE,SIZE);
+   for(let i=0;i<labels.length;i++){
+    if(labels[i]!==part)continue;
+    const k=i*4,x=i%SIZE,y=Math.floor(i/SIZE);
+    const edge=(x===0||x===SIZE-1||y===0||y===SIZE-1||labels[i-1]!==part||labels[i+1]!==part||labels[i-SIZE]!==part||labels[i+SIZE]!==part);
+    if(edge){
+     image.data[k]=part===1?204:255;image.data[k+1]=part===1?235:231;image.data[k+2]=part===1?255:184;
+    }else if(part===1){
+     image.data[k]=65+Math.floor(y/SIZE*20);image.data[k+1]=139+Math.floor(x/SIZE*15);image.data[k+2]=247;
+    }else{
+     image.data[k]=255;image.data[k+1]=154+Math.floor(y/SIZE*28);image.data[k+2]=65+Math.floor(x/SIZE*12);
+    }
+    image.data[k+3]=src.data[k+3]||255;
+   }
+   lc.putImageData(image,0,0);
+   const center=centers[part-1],side=(center[0]-lineStart[0])*(-uy)+(center[1]-lineStart[1])*ux;
+   layers.push({id:part,canvas:layer,sign:side>=0?1:-1});
+  }
+  const total=counts[0]+counts[1],a=counts[0]/total*100,b=counts[1]/total*100;
+  return {pieces:layers,path,a,b,score:Math.max(0,Math.round(100-Math.abs(a-b))),normal:{x:-uy,y:ux}};
+ }
+ function animateCut(){
+  const start=performance.now(),duration=560;
+  function frame(now){
+   animationProgress=Math.min(1,(now-start)/duration);
+   drawBoard(animationProgress);
+   if(animationProgress<1)animationFrame=requestAnimationFrame(frame);
+  }
+  animationFrame=requestAnimationFrame(frame);
+ }
+ function finishMatchSolo(){
+  const total=scores[0].reduce((a,b)=>a+b,0),best=Number(localStorage.getItem("perfectCutBest")||0),isBest=total>best;
+  if(isBest)localStorage.setItem("perfectCutBest",String(total));
+  matchEnded=true;bestValue.textContent=Math.max(total,best);roundValue.textContent="5 / 5";turnLabel.textContent="チャレンジ終了";
+  message('<div class="big">'+total+' / 500 点</div><strong>'+(isBest?"🏆 自己ベスト更新！":"5ラウンド終了！")+'</strong><br>平均 '+(total/TOTAL_ROUNDS).toFixed(1)+' 点','good');
+ }
+ function finishMatchDuo(){
+  const p1=scores[0].reduce((a,b)=>a+b,0),p2=scores[1].reduce((a,b)=>a+b,0);
+  const winner=p1>p2?"PLAYER 1 の勝利！":p2>p1?"PLAYER 2 の勝利！":"引き分け！";
+  matchEnded=true;roundValue.textContent="5 / 5";scoreValue.textContent=p1+" : "+p2;bestValue.textContent="FINAL";turnLabel.textContent="対戦終了";
+  message('<div class="big">'+winner+'</div><strong>最終結果</strong><br>PLAYER 1：'+p1+'点　／　PLAYER 2：'+p2+'点','good');
+ }
+ function completeCut(result){
+  pieces=result.pieces;cutPath=result.path;areaInfo=result;cutNormal=result.normal;
+  finished=true;phase="result";animationProgress=0;
   const playerIndex=mode==="solo"?0:player;scores[playerIndex].push(result.score);
-  const diff=Math.abs(result.a-result.b).toFixed(1);
   const praise=result.score>=99?"神業！ほぼ完璧！":result.score>=95?"すごい！かなり正確！":result.score>=85?"ナイスカット！":result.score>=70?"いい感じ！":"まだまだ伸びる！";
-  message('<div class="big">'+result.score+' 点</div><strong>'+praise+'</strong><br>エリア A：'+result.a.toFixed(1)+'%　／　エリア B：'+result.b.toFixed(1)+'%<br>50:50からのズレは '+diff+'%','good');
-  clearBtn.disabled=true;cutBtn.disabled=true;
+  message('<div class="percentages"><span class="blue">'+result.a.toFixed(1)+'%</span><b>:</b><span class="orange">'+result.b.toFixed(1)+'%</span></div><strong>'+praise+'　'+result.score+'点</strong><br>左右の面積がどれだけ半分に近いかを計測！','good');
+  clearBtn.classList.add("hidden");
+  animateCut();
   if(mode==="solo"){
    if(round<TOTAL_ROUNDS){nextBtn.textContent="次の図形へ →";nextBtn.classList.remove("hidden")}
-   else{endMatchSolo();nextBtn.textContent="もう一度チャレンジ";nextBtn.classList.remove("hidden")}
+   else{finishMatchSolo();nextBtn.textContent="もう一度チャレンジ";nextBtn.classList.remove("hidden")}
+  }else if(player===0){
+   nextBtn.textContent="P2に交代 →";nextBtn.classList.remove("hidden");
   }else{
-   if(player===0){nextBtn.textContent="P2に交代 →";nextBtn.classList.remove("hidden")}
-   else{const p1=scores[0][round-1],p2=scores[1][round-1];message(feedback.innerHTML+'<br><strong>このラウンド：'+(p1>p2?"P1の勝ち":p2>p1?"P2の勝ち":"引き分け")+'！（P1 '+p1+'点 / P2 '+p2+'点）</strong>','good');if(round<TOTAL_ROUNDS){nextBtn.textContent="次のラウンドへ →";nextBtn.classList.remove("hidden")}else{endMatchDuo();nextBtn.textContent="もう一度対戦";nextBtn.classList.remove("hidden")}}
+   const p1=scores[0][round-1],p2=scores[1][round-1];
+   const roundWinner=p1>p2?"P1の勝ち":p2>p1?"P2の勝ち":"引き分け";
+   message('<div class="percentages"><span class="blue">'+result.a.toFixed(1)+'%</span><b>:</b><span class="orange">'+result.b.toFixed(1)+'%</span></div><strong>'+praise+'　'+result.score+'点</strong><br>このラウンド：'+roundWinner+'（P1 '+p1+'点 / P2 '+p2+'点）','good');
+   if(round<TOTAL_ROUNDS){nextBtn.textContent="次のラウンドへ →";nextBtn.classList.remove("hidden")}
+   else{finishMatchDuo();nextBtn.textContent="もう一度対戦";nextBtn.classList.remove("hidden")}
   }
   setHud();
   if(matchEnded){
-   if(mode==="solo"){turnLabel.textContent="チャレンジ終了";scoreValue.textContent=scores[0].reduce((a,b)=>a+b,0);bestValue.textContent=localStorage.getItem("perfectCutBest")||"---";}
-   else{const p1=scores[0].reduce((a,b)=>a+b,0),p2=scores[1].reduce((a,b)=>a+b,0);turnLabel.textContent="対戦終了";scoreValue.textContent=p1+" : "+p2;bestValue.textContent="FINAL";}
-  }else if(mode==="duo"){turnLabel.textContent="PLAYER "+(player+1)+" の結果";}
+   turnLabel.textContent="ゲーム終了";
+   if(mode==="solo"){scoreValue.textContent=scores[0].reduce((a,b)=>a+b,0);bestValue.textContent=localStorage.getItem("perfectCutBest")||"---"}
+   else{scoreValue.textContent=scores[0].reduce((a,b)=>a+b,0)+" : "+scores[1].reduce((a,b)=>a+b,0);bestValue.textContent="FINAL"}
+  }else if(mode==="duo"){turnLabel.textContent="PLAYER "+(player+1)+" の結果"}
  }
- function endMatchSolo(){const total=scores[0].reduce((a,b)=>a+b,0),best=Number(localStorage.getItem("perfectCutBest")||0),isBest=total>best;if(isBest)localStorage.setItem("perfectCutBest",String(total));matchEnded=true;message('<div class="big">'+total+' / 500 点</div><strong>'+(isBest?"🏆 自己ベスト更新！":"5ラウンド終了！")+'</strong><br>平均 '+(total/TOTAL_ROUNDS).toFixed(1)+' 点 ／ ベスト '+Math.max(total,best)+' 点','good');bestValue.textContent=Math.max(total,best);roundValue.textContent="5 / 5";turnLabel.textContent="チャレンジ終了"}
- function endMatchDuo(){const p1=scores[0].reduce((a,b)=>a+b,0),p2=scores[1].reduce((a,b)=>a+b,0),winner=p1>p2?"PLAYER 1 の勝利！":p2>p1?"PLAYER 2 の勝利！":"引き分け！";matchEnded=true;message('<div class="big">'+winner+'</div><strong>最終結果</strong><br>PLAYER 1：'+p1+'点　／　PLAYER 2：'+p2+'点<br>合計 '+(p1+p2)+' 点','good');roundValue.textContent="5 / 5";scoreValue.textContent=p1+" : "+p2;bestValue.textContent="FINAL";turnLabel.textContent="対戦終了"}
- function advance(){
-  if(mode==="solo"){if(matchEnded){startGame();return}if(round<TOTAL_ROUNDS){round++;newShape();message("次の図形！ 今度はもっと50:50に近づけよう。")}}
-  else{
-   if(matchEnded){startGame();return}
-   if(player===0){player=1;resetCut();setHud();message("PLAYER 2の番！ PLAYER 1と同じ図形で勝負。");}
-   else{player=0;round++;if(round<=TOTAL_ROUNDS){newShape();message("次のラウンド！ PLAYER 1からスタート。")}}
+ function cutNow(){
+  if(phase!=="draw"||!lineStart||!lineEnd)return;
+  const result=makePieces();
+  if(result.invalid){message(result.invalid,"bad");clearBtn.classList.remove("hidden");return}
+  completeCut(result);
+ }
+ function redrawLineHint(){const hits=lineIntersections(lineStart,lineEnd);if(hits.length===2)message("いい感じ！ 指を離すと、この直線でカット！","");else message("その角度だと2つに分かれないかも。角度を変えてね。","")}
+ canvas.addEventListener("pointerdown",e=>{
+  if(phase!=="draw"||finished)return;
+  e.preventDefault();drawing=true;lineStart=pointFromEvent(e);lineEnd=lineStart.slice();
+  try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+  drawBoard();
+ });
+ canvas.addEventListener("pointermove",e=>{
+  if(!drawing||phase!=="draw")return;e.preventDefault();lineEnd=pointFromEvent(e);drawBoard();redrawLineHint();
+ });
+ function releaseGesture(e){
+  if(!drawing)return;drawing=false;if(e&&e.cancelable)e.preventDefault();
+  if(!lineEnd||Math.hypot(lineEnd[0]-lineStart[0],lineEnd[1]-lineStart[1])<12){
+   lineStart=null;lineEnd=null;drawBoard();message("もう少し長くドラッグしてね。","bad");return;
   }
+  cutNow();
  }
+ canvas.addEventListener("pointerup",releaseGesture);
+ canvas.addEventListener("pointercancel",()=>{if(drawing){drawing=false;lineStart=null;lineEnd=null;drawBoard()}});
  clearBtn.addEventListener("click",()=>{if(phase!=="draw")return;resetCut()});
- cutBtn.addEventListener("click",finishCut);
- nextBtn.addEventListener("click",advance);
+ nextBtn.addEventListener("click",()=>{
+  if(mode==="solo"){
+   if(matchEnded){startGame();return}
+   if(round<TOTAL_ROUNDS){round++;newShape();message("次の図形！ 今度はもっと50:50に近づけよう。","")}
+  }else{
+   if(matchEnded){startGame();return}
+   if(player===0){player=1;resetCut();setHud();message("PLAYER 2の番！ PLAYER 1と同じ図形で勝負。","")}
+   else{player=0;round++;if(round<=TOTAL_ROUNDS){newShape();message("次のラウンド！ PLAYER 1からスタート。","")}}
+  }
+ });
  soloMode.addEventListener("click",()=>{if(mode!=="solo"){mode="solo";startGame()}});
  duoMode.addEventListener("click",()=>{if(mode!=="duo"){mode="duo";startGame()}});
- const kit=window.GameKit?.mount({howto:"図形のふち付近から指で線を引き、反対側のふちまでつなげます。「この線でカット！」を押すと、2つの面積を自動で計測。50:50に近いほど高得点です。全5ラウンド。2人対戦では同じ図形をプレイヤー1・2が順番に切り、合計点を競います。",onRestart:startGame});
+ const style=document.createElement("style");
+ style.textContent=".percentages{display:flex;justify-content:center;align-items:center;gap:10px;font-size:clamp(1.8rem,8vw,2.6rem);font-weight:1000;line-height:1.25;font-variant-numeric:tabular-nums;margin-bottom:3px}.percentages .blue{color:#73baff}.percentages .orange{color:#ffc06a}.percentages b{color:#8190a8;font-size:1.3rem}#feedback.good{padding:13px 10px}#feedback .big{font-size:1.8rem}";
+ document.head.appendChild(style);
+ window.GameKit?.mount({howto:"図形の上で指を置き、切りたい方向へまっすぐドラッグして離すだけ！ 直線は自動で図形の端から端まで伸び、2つに分かれた面積がパーセントで表示されます。50% : 50%に近いほど高得点。全5ラウンド。2人対戦では同じ図形をプレイヤー1・2が順番に切ります。",onRestart:startGame});
  startGame();
 })();
 </script>
