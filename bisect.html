@@ -90,7 +90,11 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
   {name:"ペンタゴン",make:()=>regular(5,210,210,151,-Math.PI/2)},
   {name:"ハート",make:()=>heart()},
   {name:"クロス",make:()=>[[150,55],[270,55],[270,150],[365,150],[365,270],[270,270],[270,365],[150,365],[150,270],[55,270],[55,150],[150,150]]},
-  {name:"クレセント",make:()=>crescent()}
+  {name:"いびつな雲",make:()=>blob([.12,.28,.05,.18,.03,.1])},
+  {name:"ゆがんだしずく",make:()=>blob([.34,.12,.22,.04,.13,.02],-Math.PI/2)},
+  {name:"でこぼこ岩",make:()=>blob([.2,.08,.31,.16,.07,.12])},
+  {name:"へんてこ形",make:()=>blob([.38,.2,.06,.27,.14,.05],.4)},
+  {name:"ふにゃふにゃ",make:()=>blob([.08,.34,.24,.11,.2,.07],-.5)}
  ];
  let mode="solo",round=1,shapeIndex=0,poly=defs[0].make();
  let lineStart=null,lineEnd=null,drawing=false,finished=false,phase="draw";
@@ -100,7 +104,17 @@ canvas{display:block;width:100%;aspect-ratio:1/1;border-radius:14px;background:#
  function regular(n,cx,cy,r,offset=0){const a=[];for(let i=0;i<n;i++){const t=offset+i*Math.PI*2/n;a.push([cx+Math.cos(t)*r,cy+Math.sin(t)*r])}return a}
  function star(n,outer,inner){const a=[];for(let i=0;i<n*2;i++){const t=-Math.PI/2+i*Math.PI/n,r=i%2?inner:outer;a.push([210+Math.cos(t)*r,210+Math.sin(t)*r])}return a}
  function heart(){const a=[];for(let i=0;i<100;i++){const t=i*Math.PI*2/100,x=16*Math.pow(Math.sin(t),3),y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);a.push([210+x*8.4,210-y*8.4])}return a}
- function crescent(){const a=[];for(let i=0;i<=42;i++){const t=-Math.PI/2+i*Math.PI*2/42;a.push([210+Math.cos(t)*147,210+Math.sin(t)*147])}for(let i=42;i>=0;i--){const t=-Math.PI/2+i*Math.PI*2/42;a.push([259+Math.cos(t)*111,210+Math.sin(t)*132])}return a}
+ function blob(waves,rotation=0){
+  const a=[],n=120;
+  for(let i=0;i<n;i++){
+   const t=rotation+i*Math.PI*2/n;
+   let r=133;
+   for(let k=0;k<waves.length;k++)r*=1+waves[k]*Math.sin((k+2)*t+(k%2)*.83);
+   r=Math.max(76,Math.min(174,r));
+   a.push([210+Math.cos(t)*r*1.03,210+Math.sin(t)*r*.91]);
+  }
+  return a;
+ }
  function shuffled(){const a=defs.map((_,i)=>i);for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
  function shapePath(c,p){c.beginPath();c.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)c.lineTo(p[i][0],p[i][1]);c.closePath()}
  function pointInPoly(p,arr){let inside=false;for(let i=0,j=arr.length-1;i<arr.length;j=i++){const xi=arr[i][0],yi=arr[i][1],xj=arr[j][0],yj=arr[j][1];if(((yi>p[1])!==(yj>p[1]))&&(p[0]<(xj-xi)*(p[1]-yi)/(yj-yi)+xi))inside=!inside}return inside}
